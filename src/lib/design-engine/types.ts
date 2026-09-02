@@ -55,11 +55,20 @@ export interface Module {
   mouldingDepthMm?: number;
 }
 
+/** A single door (or pair of doors) covering the column's full height, in front of
+ * whatever modules it contains — independent of any per-module "doors" module. */
+export interface FullDoorConfig {
+  hinge: "left" | "right" | "double";
+  handle?: boolean;
+}
+
 export interface Column {
   id: string;
   widthM: number;
   /** Stacked bottom (index 0) to top. */
   modules: Module[];
+  /** When set, generates a door (or pair of doors) spanning the entire column height. */
+  fullDoor?: FullDoorConfig;
 }
 
 export interface GlobalParams {

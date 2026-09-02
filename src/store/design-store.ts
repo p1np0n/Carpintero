@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createColumn, createModule, createEmptyDesign, nextId } from "@/lib/design-engine/defaults";
-import type { Column, Design, GlobalParams, Module, ModuleType } from "@/lib/design-engine/types";
+import type { Column, Design, FullDoorConfig, GlobalParams, Module, ModuleType } from "@/lib/design-engine/types";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -21,6 +21,7 @@ interface DesignStoreState {
   addColumn: (position: "start" | "end") => void;
   removeColumn: (columnId: string) => void;
   setColumnWidth: (columnId: string, widthM: number) => void;
+  setColumnFullDoor: (columnId: string, fullDoor: FullDoorConfig | null) => void;
   moveColumn: (columnId: string, direction: "left" | "right") => void;
 
   addModule: (columnId: string, position: "start" | "end") => void;
@@ -76,6 +77,11 @@ export const useDesignStore = create<DesignStoreState>((set) => ({
   setColumnWidth: (columnId, widthM) =>
     set((state) => ({
       design: mapColumn(state.design, columnId, (c) => ({ ...c, widthM: Math.max(0.1, widthM) })),
+    })),
+
+  setColumnFullDoor: (columnId, fullDoor) =>
+    set((state) => ({
+      design: mapColumn(state.design, columnId, (c) => ({ ...c, fullDoor: fullDoor ?? undefined })),
     })),
 
   moveColumn: (columnId, direction) =>

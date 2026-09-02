@@ -345,6 +345,87 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
   }
 }
 
+/** A door (or pair of doors) covering a column's full height, regardless of how many
+ * modules it contains — generated once per column, independent of the module loop. */
+function genFullDoorPieces(column: Column, columnX0: number, globalParams: GlobalParams, H: number): PanelPiece[] {
+  const config = column.fullDoor;
+  if (!config) return [];
+
+  const { depthM, thicknessMm, overhangMm } = globalParams;
+  const thicknessM = thicknessMm / 1000;
+  const overhangM = overhangMm / 1000;
+  const W = column.widthM;
+  const innerWidth = round(W - 2 * thicknessM);
+  const centerZ = depthM + thicknessM / 2;
+  const doorHeight = round(H + overhangM);
+  const centerY = H / 2;
+
+  const piece = (p: Omit<PanelPiece, "id" | "moduleId" | "columnId">): PanelPiece => ({
+    id: `${column.id}-fulldoor-${p.hinge ?? "single"}-${Math.random().toString(36).slice(2, 8)}`,
+    moduleId: "__fulldoor__",
+    columnId: column.id,
+    ...p,
+  });
+
+  if (config.hinge === "double") {
+    const doorWidth = round((innerWidth + overhangM) / 2);
+    return [
+      piece({
+        role: "door-front",
+        orientation: "vertical-xy",
+        widthM: doorWidth,
+        heightM: doorHeight,
+        thicknessMm,
+        isHardware: false,
+        centerX: columnX0 + doorWidth / 2,
+        centerY,
+        centerZ,
+        sizeX: doorWidth,
+        sizeY: doorHeight,
+        sizeZ: thicknessM,
+        hinge: "left",
+        handle: config.handle ?? true,
+      }),
+      piece({
+        role: "door-front",
+        orientation: "vertical-xy",
+        widthM: doorWidth,
+        heightM: doorHeight,
+        thicknessMm,
+        isHardware: false,
+        centerX: columnX0 + W - doorWidth / 2,
+        centerY,
+        centerZ,
+        sizeX: doorWidth,
+        sizeY: doorHeight,
+        sizeZ: thicknessM,
+        hinge: "right",
+        handle: config.handle ?? true,
+      }),
+    ];
+  }
+
+  const doorWidth = round(innerWidth + overhangM);
+  return [
+    piece({
+      role: "door-front",
+      orientation: "vertical-xy",
+      widthM: doorWidth,
+      heightM: doorHeight,
+      thicknessMm,
+      isHardware: false,
+      centerX: columnX0 + W / 2,
+      centerY,
+      centerZ,
+      sizeX: doorWidth,
+      sizeY: doorHeight,
+      sizeZ: thicknessM,
+      hinge: config.hinge,
+      handle: config.handle ?? true,
+    }),
+  ];
+}
+
 export function computePanels(design: Design): PanelPiece[] {
   const { globalParams, columns } = design;
   const { depthM, thicknessMm } = globalParams;
@@ -452,6 +533,8 @@ export function computePanels(design: Design): PanelPiece[] {
       pieces.push(...genModulePieces(mod, { column, columnX0, globalParams, yBottom }));
       yBottom += mod.heightM;
     }
+
+    pieces.push(...genFullDoorPieces(column, columnX0, globalParams, H));
 
     columnX0 += W;
   }

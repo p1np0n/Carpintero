@@ -1,6 +1,6 @@
 import * as React from "react";
 import { computeLayout2D, type ModuleRect } from "@/lib/design-engine/layout2d";
-import type { Design } from "@/lib/design-engine/types";
+import type { Design, FullDoorConfig } from "@/lib/design-engine/types";
 
 const GRAPHITE = "#3f3f46";
 const GRAPHITE_SOFT = "#3f3f4633";
@@ -87,6 +87,32 @@ function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => n
   }
 }
 
+/** Overlay marking a column-wide door (spanning every module in the column) — an inset
+ * dashed outline plus handle knob(s), drawn on top of the column's own outline. */
+function FullDoorDecoration({ config, width, y, height }: { config: FullDoorConfig; width: number; y: number; height: number }) {
+  const cy = y + height / 2;
+
+  if (config.hinge === "double") {
+    const cx = width / 2;
+    return (
+      <>
+        <rect x={3} y={y + 3} width={width - 6} height={height - 6} fill="none" stroke={GRAPHITE} strokeWidth={1.5} strokeDasharray="3 3" />
+        <line x1={cx} y1={y + 4} x2={cx} y2={y + height - 4} stroke={GRAPHITE} strokeWidth={1.5} />
+        <circle cx={cx - width * 0.06} cy={cy} r={4} fill={GRAPHITE} />
+        <circle cx={cx + width * 0.06} cy={cy} r={4} fill={GRAPHITE} />
+      </>
+    );
+  }
+
+  const knobX = config.hinge === "left" ? width - width * 0.08 : width * 0.08;
+  return (
+    <>
+      <rect x={3} y={y + 3} width={width - 6} height={height - 6} fill="none" stroke={GRAPHITE} strokeWidth={1.5} strokeDasharray="3 3" />
+      <circle cx={knobX} cy={cy} r={4} fill={GRAPHITE} />
+    </>
+  );
+}
+
 export interface ElevationSvgProps {
   design: Design;
   selectedModuleId?: string | null;
@@ -157,6 +183,14 @@ export function ElevationSvg({ design, selectedModuleId, onSelectModule, classNa
             strokeOpacity={0.9}
             strokeWidth={2.5}
           />
+          {col.column.fullDoor && (
+            <FullDoorDecoration
+              config={col.column.fullDoor}
+              width={mm(col.width)}
+              y={totalH - mm(col.height)}
+              height={mm(col.height)}
+            />
+          )}
         </g>
       ))}
     </svg>
