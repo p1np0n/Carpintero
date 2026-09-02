@@ -25,7 +25,7 @@ export function View3DPanel({ design }: { design: Design }) {
   const [mode, setMode] = React.useState<ViewMode3D>("solid");
 
   return (
-    <div className="relative h-full min-h-64 bg-[#161310]">
+    <div className="relative h-full min-h-64 min-w-0 bg-[#161310]">
       <View3DScene design={design} mode={mode} />
       <div className="absolute right-3 top-3 flex gap-1 rounded-md border border-border/50 bg-background/80 p-1 backdrop-blur">
         {MODES.map((m) => (

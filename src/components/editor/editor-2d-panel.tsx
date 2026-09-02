@@ -21,7 +21,7 @@ export function Editor2DPanel() {
   const layout = React.useMemo(() => computeLayout2D(design), [design]);
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full min-h-0 min-w-0 flex-col bg-background">
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
         <span className="text-xs font-medium text-muted-foreground">Alzado frontal</span>
       </div>
