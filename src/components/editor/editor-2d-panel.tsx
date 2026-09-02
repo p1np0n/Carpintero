@@ -48,19 +48,19 @@ export function Editor2DPanel() {
 /** Vertical dimension line + arrowheads, sized to exactly match a module stack's height. */
 function HeightGauge({ heightPx, label }: { heightPx: number; label: string }) {
   return (
-    <div className="flex shrink-0 items-stretch text-muted-foreground" style={{ height: heightPx, width: 22 }} title={`Alto: ${label} m`}>
-      <svg width="22" height={heightPx} viewBox={`0 0 22 ${heightPx}`}>
-        <line x1="11" y1="4" x2="11" y2={heightPx - 4} stroke="currentColor" strokeWidth="1.25" />
-        <polyline points="7,9 11,4 15,9" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+    <div className="flex shrink-0 items-stretch text-foreground" style={{ height: heightPx, width: 24 }} title={`Alto: ${label} m`}>
+      <svg width="24" height={heightPx} viewBox={`0 0 24 ${heightPx}`}>
+        <line x1="12" y1="4" x2="12" y2={heightPx - 4} stroke="currentColor" strokeWidth="1.75" />
+        <polyline points="7,10 12,4 17,10" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         <polyline
-          points={`7,${heightPx - 9} 11,${heightPx - 4} 15,${heightPx - 9}`}
+          points={`7,${heightPx - 10} 12,${heightPx - 4} 17,${heightPx - 10}`}
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.25"
+          strokeWidth="1.75"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <text x="11" y={heightPx / 2} transform={`rotate(-90 11 ${heightPx / 2})`} textAnchor="middle" fontSize="10" fontWeight={600} fill="currentColor">
+        <text x="12" y={heightPx / 2} transform={`rotate(-90 12 ${heightPx / 2})`} textAnchor="middle" fontSize="11" fontWeight={700} fill="currentColor">
           {label} m
         </text>
       </svg>
@@ -71,19 +71,19 @@ function HeightGauge({ heightPx, label }: { heightPx: number; label: string }) {
 /** Horizontal dimension line + arrowheads, sized to exactly match a module stack's width. */
 function WidthGauge({ widthPx, label }: { widthPx: number; label: string }) {
   return (
-    <div className="flex shrink-0 items-center justify-center text-muted-foreground" style={{ width: widthPx, height: 18 }} title={`Ancho: ${label} m`}>
-      <svg width={widthPx} height="18" viewBox={`0 0 ${widthPx} 18`}>
-        <line x1="4" y1="9" x2={widthPx - 4} y2="9" stroke="currentColor" strokeWidth="1.25" />
-        <polyline points="9,5 4,9 9,13" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+    <div className="flex shrink-0 items-center justify-center text-foreground" style={{ width: widthPx, height: 20 }} title={`Ancho: ${label} m`}>
+      <svg width={widthPx} height="20" viewBox={`0 0 ${widthPx} 20`}>
+        <line x1="4" y1="10" x2={widthPx - 4} y2="10" stroke="currentColor" strokeWidth="1.75" />
+        <polyline points="10,5 4,10 10,15" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         <polyline
-          points={`${widthPx - 9},5 ${widthPx - 4},9 ${widthPx - 9},13`}
+          points={`${widthPx - 10},5 ${widthPx - 4},10 ${widthPx - 10},15`}
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.25"
+          strokeWidth="1.75"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <text x={widthPx / 2} y="13" textAnchor="middle" fontSize="10" fontWeight={600} fill="currentColor">
+        <text x={widthPx / 2} y="15" textAnchor="middle" fontSize="11" fontWeight={700} fill="currentColor">
           {label} m
         </text>
       </svg>
@@ -112,7 +112,7 @@ function AddColumnSlot({ heightM, onAdd }: { heightM: number; onAdd: () => void 
         <Plus className="size-5" />
         <span className="text-[10px] font-medium leading-tight">Columna</span>
       </button>
-      <div className="invisible" style={{ height: 18 }} />
+      <div className="invisible" style={{ height: 20 }} />
       <Button variant="ghost" size="sm" className="invisible mt-1">
         <Plus className="size-3.5" />
       </Button>
