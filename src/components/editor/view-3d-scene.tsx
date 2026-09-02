@@ -10,8 +10,8 @@ import { designHeightM, designWidthM } from "@/lib/design-engine/types";
 
 export type ViewMode3D = "solid" | "open" | "exploded";
 
-const AMBER = "#f59e0b";
-const AMBER_SOFT = "#fbbf24";
+const GRAPHITE = "#a1a1aa";
+const GRAPHITE_SOFT = "#d4d4d8";
 
 function getTransform(piece: Piece3D, mode: ViewMode3D) {
   const base: [number, number, number] = [piece.centerX, piece.centerY, piece.centerZ];
@@ -44,7 +44,7 @@ function getTransform(piece: Piece3D, mode: ViewMode3D) {
 }
 
 function Piece3DMesh({ piece, mode }: { piece: Piece3D; mode: ViewMode3D }) {
-  const color = piece.isHardware ? AMBER_SOFT : AMBER;
+  const color = piece.isHardware ? GRAPHITE_SOFT : GRAPHITE;
 
   if (piece.role === "hanging-rod") {
     const { position } = getTransform(piece, mode);
@@ -117,13 +117,13 @@ export function View3DScene({ design, mode }: { design: Design; mode: ViewMode3D
       <ambientLight intensity={0.6} />
       <directionalLight position={[3, 5, 4]} intensity={1.1} />
       <directionalLight position={[-3, 2, -2]} intensity={0.3} />
-      <Sparkles count={60} scale={[maxDim * 2.5, maxDim * 2.5, maxDim * 2.5]} size={2} speed={0.15} color={AMBER} opacity={0.25} position={center} />
+      <Sparkles count={60} scale={[maxDim * 2.5, maxDim * 2.5, maxDim * 2.5]} size={2} speed={0.15} color={GRAPHITE} opacity={0.25} position={center} />
       <React.Suspense fallback={null}>
         <FurnitureModel design={design} mode={mode} />
       </React.Suspense>
       <OrbitControls target={center} makeDefault />
       <GizmoHelper alignment="bottom-right" margin={[64, 64]}>
-        <GizmoViewport axisColors={[AMBER, "#84cc16", "#38bdf8"]} labelColor="black" />
+        <GizmoViewport axisColors={[GRAPHITE, "#84cc16", "#38bdf8"]} labelColor="black" />
       </GizmoHelper>
     </Canvas>
   );

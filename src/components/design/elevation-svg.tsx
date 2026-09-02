@@ -2,8 +2,8 @@ import * as React from "react";
 import { computeLayout2D, type ModuleRect } from "@/lib/design-engine/layout2d";
 import type { Design } from "@/lib/design-engine/types";
 
-const AMBER = "#f59e0b";
-const AMBER_SOFT = "#f59e0b33";
+const GRAPHITE = "#3f3f46";
+const GRAPHITE_SOFT = "#3f3f4633";
 
 function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => number }) {
   const w = mm(rect.width);
@@ -13,44 +13,44 @@ function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => n
 
   switch (rect.module.type) {
     case "shelf":
-      return <line x1={0} y1={4} x2={w} y2={4} stroke={AMBER} strokeWidth={2} />;
+      return <line x1={0} y1={4} x2={w} y2={4} stroke={GRAPHITE} strokeWidth={2} />;
     case "drawer":
       return (
         <>
-          <line x1={0} y1={3} x2={w} y2={3} stroke={AMBER} strokeWidth={1.5} />
-          <rect x={cx - w * 0.12} y={cy - 2} width={w * 0.24} height={4} fill={AMBER} rx={2} />
+          <line x1={0} y1={3} x2={w} y2={3} stroke={GRAPHITE} strokeWidth={1.5} />
+          <rect x={cx - w * 0.12} y={cy - 2} width={w * 0.24} height={4} fill={GRAPHITE} rx={2} />
         </>
       );
     case "doors":
       return (
         <>
-          <line x1={cx} y1={2} x2={cx} y2={h - 2} stroke={AMBER} strokeWidth={1.5} />
-          <circle cx={cx - w * 0.08} cy={cy} r={3} fill={AMBER} />
-          <circle cx={cx + w * 0.08} cy={cy} r={3} fill={AMBER} />
+          <line x1={cx} y1={2} x2={cx} y2={h - 2} stroke={GRAPHITE} strokeWidth={1.5} />
+          <circle cx={cx - w * 0.08} cy={cy} r={3} fill={GRAPHITE} />
+          <circle cx={cx + w * 0.08} cy={cy} r={3} fill={GRAPHITE} />
         </>
       );
     case "left-door":
-      return <circle cx={w - w * 0.1} cy={cy} r={3} fill={AMBER} />;
+      return <circle cx={w - w * 0.1} cy={cy} r={3} fill={GRAPHITE} />;
     case "right-door":
-      return <circle cx={w * 0.1} cy={cy} r={3} fill={AMBER} />;
+      return <circle cx={w * 0.1} cy={cy} r={3} fill={GRAPHITE} />;
     case "hanging-rod":
       return (
         <>
-          <line x1={4} y1={cy} x2={w - 4} y2={cy} stroke={AMBER} strokeWidth={2} strokeDasharray="6 4" />
-          <circle cx={4} cy={cy} r={3} fill={AMBER} />
-          <circle cx={w - 4} cy={cy} r={3} fill={AMBER} />
+          <line x1={4} y1={cy} x2={w - 4} y2={cy} stroke={GRAPHITE} strokeWidth={2} strokeDasharray="6 4" />
+          <circle cx={4} cy={cy} r={3} fill={GRAPHITE} />
+          <circle cx={w - 4} cy={cy} r={3} fill={GRAPHITE} />
         </>
       );
     case "legs":
       return (
         <>
-          <line x1={4} y1={h} x2={4} y2={h - 10} stroke={AMBER} strokeWidth={3} />
-          <line x1={w - 4} y1={h} x2={w - 4} y2={h - 10} stroke={AMBER} strokeWidth={3} />
+          <line x1={4} y1={h} x2={4} y2={h - 10} stroke={GRAPHITE} strokeWidth={3} />
+          <line x1={w - 4} y1={h} x2={w - 4} y2={h - 10} stroke={GRAPHITE} strokeWidth={3} />
         </>
       );
     case "top-moulding":
     case "bottom-moulding":
-      return <rect x={0} y={rect.module.type === "top-moulding" ? h - 6 : 0} width={w} height={6} fill={AMBER} opacity={0.6} />;
+      return <rect x={0} y={rect.module.type === "top-moulding" ? h - 6 : 0} width={w} height={6} fill={GRAPHITE} opacity={0.6} />;
     case "multiple": {
       const count = rect.module.multipleCount ?? 1;
       const subHeight = h / count;
@@ -63,7 +63,7 @@ function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => n
               y1={(i + 1) * subHeight}
               x2={w}
               y2={(i + 1) * subHeight}
-              stroke={AMBER}
+              stroke={GRAPHITE}
               strokeWidth={1}
             />
           ))}
@@ -74,7 +74,7 @@ function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => n
               y={i * subHeight + subHeight / 2 - 2}
               width={w * 0.24}
               height={4}
-              fill={AMBER}
+              fill={GRAPHITE}
               rx={2}
             />
           ))}
@@ -138,8 +138,8 @@ export function ElevationSvg({ design, selectedModuleId, onSelectModule, classNa
                   y={0}
                   width={mm(rect.width)}
                   height={mm(rect.height)}
-                  fill={isSelected ? AMBER_SOFT : "transparent"}
-                  stroke={isSelected ? AMBER : "currentColor"}
+                  fill={isSelected ? GRAPHITE_SOFT : "transparent"}
+                  stroke={isSelected ? GRAPHITE : "currentColor"}
                   strokeOpacity={isSelected ? 1 : 0.6}
                   strokeWidth={isSelected ? 2.5 : 1.5}
                 />

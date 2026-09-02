@@ -12,7 +12,7 @@ import { nestingToDxf } from "@/lib/design-engine/export/dxf";
 import { downloadBlob } from "@/lib/download-file";
 import type { CutlistRow } from "@/lib/design-engine/cutlist";
 
-const AMBER = "#f59e0b";
+const GRAPHITE_LIGHT = "#a1a1aa";
 
 export function NestingSection({ cutlist }: { cutlist: CutlistRow[] }) {
   const [sheet, setSheet] = React.useState<SheetSize>({ widthM: 1.83, heightM: 2.44 });
@@ -106,7 +106,7 @@ export function NestingSection({ cutlist }: { cutlist: CutlistRow[] }) {
                 </div>
                 <div
                   className="max-w-xl rounded border border-border p-2"
-                  style={{ color: AMBER }}
+                  style={{ color: GRAPHITE_LIGHT }}
                   dangerouslySetInnerHTML={{ __html: svgDocs[activeSheet] ?? "" }}
                 />
               </div>

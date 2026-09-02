@@ -1,7 +1,7 @@
 import { computeLayout2D } from "./layout2d";
 import type { Design } from "./types";
 
-const AMBER = "#f59e0b";
+const GRAPHITE = "#3f3f46";
 
 /**
  * Renders the front elevation as a standalone SVG string (line-art, no React) —
@@ -22,12 +22,12 @@ export function renderThumbnailSvg(design: Design): string {
           const svgY = totalH - mm(rect.y) - mm(rect.height);
           return `<rect x="${mm(col.x)}" y="${svgY}" width="${mm(rect.width)}" height="${mm(
             rect.height
-          )}" fill="none" stroke="${AMBER}" stroke-opacity="0.55" stroke-width="1.5" />`;
+          )}" fill="none" stroke="${GRAPHITE}" stroke-opacity="0.55" stroke-width="1.5" />`;
         })
         .join("");
       const outline = `<rect x="${mm(col.x)}" y="${totalH - mm(col.height)}" width="${mm(col.width)}" height="${mm(
         col.height
-      )}" fill="none" stroke="${AMBER}" stroke-width="2.5" />`;
+      )}" fill="none" stroke="${GRAPHITE}" stroke-width="2.5" />`;
       return modules + outline;
     })
     .join("");

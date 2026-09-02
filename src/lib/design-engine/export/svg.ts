@@ -2,8 +2,10 @@ import type { NestingResult } from "../nesting";
 import type { SheetSize } from "../nesting";
 import type { CutlistRow } from "../cutlist";
 
-const AMBER = "#f59e0b";
-const AMBER_DARK = "#78350f";
+const GRAPHITE = "#3f3f46";
+const GRAPHITE_LIGHT = "#a1a1aa";
+const GRAPHITE_TEXT_ON_DARK = "#e4e4e7";
+const GRAPHITE_TEXT_ON_LIGHT = "#18181b";
 
 /** One SVG document per sheet, with each placed piece drawn to scale (px = mm). */
 export function nestingToSvg(result: NestingResult, sheet: SheetSize): string[] {
@@ -20,8 +22,8 @@ export function nestingToSvg(result: NestingResult, sheet: SheetSize): string[] 
         const w = Math.round(p.width * 1000);
         const h = Math.round(p.height * 1000);
         return `<g>
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${AMBER}" stroke-width="2" />
-  <text x="${x + w / 2}" y="${y + h / 2}" fill="${AMBER_DARK}" font-size="${Math.min(w, h) / 6}" text-anchor="middle" dominant-baseline="middle">${p.cutlistId}</text>
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${GRAPHITE_LIGHT}" stroke-width="2" />
+  <text x="${x + w / 2}" y="${y + h / 2}" fill="${GRAPHITE_TEXT_ON_DARK}" font-size="${Math.min(w, h) / 6}" text-anchor="middle" dominant-baseline="middle">${p.cutlistId}</text>
 </g>`;
       })
       .join("\n");
@@ -42,7 +44,7 @@ export function pieceToSvg(row: CutlistRow): string {
   const heightPx = Math.round(row.heightM * 1000);
   const pad = 20;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx + pad * 2}" height="${heightPx + pad * 2}" viewBox="0 0 ${widthPx + pad * 2} ${heightPx + pad * 2}">
-  <rect x="${pad}" y="${pad}" width="${widthPx}" height="${heightPx}" fill="none" stroke="${AMBER}" stroke-width="2" />
-  <text x="${pad + widthPx / 2}" y="${pad + heightPx / 2}" fill="${AMBER_DARK}" font-size="16" text-anchor="middle" dominant-baseline="middle">${row.cutlistId} · ${row.widthM.toFixed(3)}×${row.heightM.toFixed(3)} m ×${row.qty}</text>
+  <rect x="${pad}" y="${pad}" width="${widthPx}" height="${heightPx}" fill="none" stroke="${GRAPHITE}" stroke-width="2" />
+  <text x="${pad + widthPx / 2}" y="${pad + heightPx / 2}" fill="${GRAPHITE_TEXT_ON_LIGHT}" font-size="16" text-anchor="middle" dominant-baseline="middle">${row.cutlistId} · ${row.widthM.toFixed(3)}×${row.heightM.toFixed(3)} m ×${row.qty}</text>
 </svg>`;
 }
