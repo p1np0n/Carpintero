@@ -47,20 +47,25 @@ export function Editor2DPanel() {
 
 /** Vertical dimension line + arrowheads, sized to exactly match a module stack's height. */
 function HeightGauge({ heightPx, label }: { heightPx: number; label: string }) {
+  const gaugeWidth = 34;
+  const lineX = 9;
+  const textX = 25;
+
   return (
-    <div className="flex shrink-0 items-stretch text-foreground" style={{ height: heightPx, width: 24 }} title={`Alto: ${label} m`}>
-      <svg width="24" height={heightPx} viewBox={`0 0 24 ${heightPx}`}>
-        <line x1="12" y1="4" x2="12" y2={heightPx - 4} stroke="currentColor" strokeWidth="1.75" />
-        <polyline points="7,10 12,4 17,10" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    <div className="flex shrink-0 items-stretch text-foreground" style={{ height: heightPx, width: gaugeWidth }} title={`Alto: ${label} m`}>
+      <svg width={gaugeWidth} height={heightPx} viewBox={`0 0 ${gaugeWidth} ${heightPx}`}>
+        <line x1={lineX} y1="4" x2={lineX} y2={heightPx - 4} stroke="currentColor" strokeWidth="1.75" />
+        <polyline points={`${lineX - 5},10 ${lineX},4 ${lineX + 5},10`} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         <polyline
-          points={`7,${heightPx - 10} 12,${heightPx - 4} 17,${heightPx - 10}`}
+          points={`${lineX - 5},${heightPx - 10} ${lineX},${heightPx - 4} ${lineX + 5},${heightPx - 10}`}
           fill="none"
           stroke="currentColor"
           strokeWidth="1.75"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <text x="12" y={heightPx / 2} transform={`rotate(-90 12 ${heightPx / 2})`} textAnchor="middle" fontSize="11" fontWeight={700} fill="currentColor">
+        {/* Text sits in its own column, offset from the dimension line so it never overlaps it. */}
+        <text x={textX} y={heightPx / 2} transform={`rotate(-90 ${textX} ${heightPx / 2})`} textAnchor="middle" fontSize="11" fontWeight={700} fill="currentColor">
           {label} m
         </text>
       </svg>
@@ -70,20 +75,25 @@ function HeightGauge({ heightPx, label }: { heightPx: number; label: string }) {
 
 /** Horizontal dimension line + arrowheads, sized to exactly match a module stack's width. */
 function WidthGauge({ widthPx, label }: { widthPx: number; label: string }) {
+  const gaugeHeight = 28;
+  const lineY = 7;
+  const textY = 25;
+
   return (
-    <div className="flex shrink-0 items-center justify-center text-foreground" style={{ width: widthPx, height: 20 }} title={`Ancho: ${label} m`}>
-      <svg width={widthPx} height="20" viewBox={`0 0 ${widthPx} 20`}>
-        <line x1="4" y1="10" x2={widthPx - 4} y2="10" stroke="currentColor" strokeWidth="1.75" />
-        <polyline points="10,5 4,10 10,15" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    <div className="flex shrink-0 items-center justify-center text-foreground" style={{ width: widthPx, height: gaugeHeight }} title={`Ancho: ${label} m`}>
+      <svg width={widthPx} height={gaugeHeight} viewBox={`0 0 ${widthPx} ${gaugeHeight}`}>
+        <line x1="4" y1={lineY} x2={widthPx - 4} y2={lineY} stroke="currentColor" strokeWidth="1.75" />
+        <polyline points={`10,${lineY - 4} 4,${lineY} 10,${lineY + 4}`} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         <polyline
-          points={`${widthPx - 10},5 ${widthPx - 4},10 ${widthPx - 10},15`}
+          points={`${widthPx - 10},${lineY - 4} ${widthPx - 4},${lineY} ${widthPx - 10},${lineY + 4}`}
           fill="none"
           stroke="currentColor"
           strokeWidth="1.75"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <text x={widthPx / 2} y="15" textAnchor="middle" fontSize="11" fontWeight={700} fill="currentColor">
+        {/* Text sits in its own row below the dimension line so it never overlaps it. */}
+        <text x={widthPx / 2} y={textY} textAnchor="middle" fontSize="11" fontWeight={700} fill="currentColor">
           {label} m
         </text>
       </svg>
@@ -112,7 +122,7 @@ function AddColumnSlot({ heightM, onAdd }: { heightM: number; onAdd: () => void 
         <Plus className="size-5" />
         <span className="text-[10px] font-medium leading-tight">Columna</span>
       </button>
-      <div className="invisible" style={{ height: 20 }} />
+      <div className="invisible" style={{ height: 28 }} />
       <Button variant="ghost" size="sm" className="invisible mt-1">
         <Plus className="size-3.5" />
       </Button>
