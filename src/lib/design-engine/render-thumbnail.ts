@@ -25,7 +25,7 @@ export function renderThumbnailSvg(design: Design): string {
           )}" fill="none" stroke="${GRAPHITE}" stroke-opacity="0.55" stroke-width="1.5" />`;
         })
         .join("");
-      const outline = `<rect x="${mm(col.x)}" y="${totalH - mm(col.height)}" width="${mm(col.width)}" height="${mm(
+      const outline = `<rect x="${mm(col.x)}" y="${totalH - mm(col.y) - mm(col.height)}" width="${mm(col.width)}" height="${mm(
         col.height
       )}" fill="none" stroke="${GRAPHITE}" stroke-width="2.5" />`;
       return modules + outline;

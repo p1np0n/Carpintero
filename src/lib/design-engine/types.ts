@@ -69,6 +69,10 @@ export interface Column {
   modules: Module[];
   /** When set, generates a door (or pair of doors) spanning the entire column height. */
   fullDoor?: FullDoorConfig;
+  /** Height above the floor where this column starts, in meters. 0 (default) sits on
+   * the floor; a positive value makes it a wall-mounted unit (e.g. an upper kitchen
+   * cabinet / "mueble aéreo") with open space underneath. */
+  mountHeightM?: number;
 }
 
 export interface GlobalParams {
@@ -79,6 +83,9 @@ export interface GlobalParams {
   extraCostManual?: number;
   /** Currency code shown in the budget (CLP, USD, MXN, ...). */
   currency?: string;
+  /** Optional thinner/different thickness for the back panel only (e.g. 3mm hardboard
+   * "durolac" or thin plywood behind an 18mm carcass). Falls back to `thicknessMm`. */
+  backPanelThicknessMm?: number;
 }
 
 export interface Design {
@@ -96,8 +103,13 @@ export function columnHeightM(column: Column): number {
   return column.modules.reduce((sum, m) => sum + m.heightM, 0);
 }
 
+/** Height of the column's top edge above the floor: mount height + its own stack height. */
+export function columnTopM(column: Column): number {
+  return (column.mountHeightM ?? 0) + columnHeightM(column);
+}
+
 export function designHeightM(design: Design): number {
-  return design.columns.reduce((max, c) => Math.max(max, columnHeightM(c)), 0);
+  return design.columns.reduce((max, c) => Math.max(max, columnTopM(c)), 0);
 }
 
 export function designWidthM(design: Design): number {

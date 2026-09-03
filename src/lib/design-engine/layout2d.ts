@@ -13,6 +13,8 @@ export interface ModuleRect {
 export interface ColumnLayout {
   column: Column;
   x: number;
+  /** meters above the floor where the column's own stack starts (its mount height). */
+  y: number;
   width: number;
   height: number;
   modules: ModuleRect[];
@@ -31,13 +33,14 @@ export function computeLayout2D(design: Design): DesignLayout {
 
   for (const column of design.columns) {
     const height = columnHeightM(column);
-    let y = 0;
+    const mountY = column.mountHeightM ?? 0;
+    let y = mountY;
     const modules: ModuleRect[] = column.modules.map((module) => {
       const rect: ModuleRect = { module, x, y, width: column.widthM, height: module.heightM };
       y += module.heightM;
       return rect;
     });
-    columns.push({ column, x, width: column.widthM, height, modules });
+    columns.push({ column, x, y: mountY, width: column.widthM, height, modules });
     x += column.widthM;
   }
 

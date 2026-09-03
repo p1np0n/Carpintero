@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpDown, Plus, Minus } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpDown, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDesignStore } from "@/store/design-store";
@@ -19,7 +19,7 @@ const MIN_MODULE_PX = 26;
 const COLUMN_GAP_PX = 20;
 const ADD_SLOT_WIDTH_PX = 64;
 /** Shared classes for the square +/- controls that grow/shrink a column or its modules. */
-const RESIZE_BUTTON_CLASS = "flex size-9 shrink-0 items-center justify-center rounded-md border border-input bg-transparent transition-colors hover:bg-accent hover:text-accent-foreground";
+const RESIZE_BUTTON_CLASS = "flex size-11 shrink-0 items-center justify-center rounded-md border border-input bg-transparent transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40";
 
 export function Editor2DPanel() {
   const design = useDesignStore((s) => s.design);
@@ -55,10 +55,15 @@ export function Editor2DPanel() {
             {/* Row 2: the total-width dimension line, spanning every column above. */}
             <TotalWidthGauge widthPx={totalWidthPx} label={layout.widthM.toFixed(2)} />
 
-            {/* Row 3: per-column controls (add module, remove column, full door). */}
+            {/* Row 3: per-column controls (add module, move/remove column, full door). */}
             <div className="flex items-start" style={{ gap: COLUMN_GAP_PX }}>
-              {layout.columns.map((columnLayout) => (
-                <ColumnEditorBottom key={columnLayout.column.id} columnLayout={columnLayout} />
+              {layout.columns.map((columnLayout, i) => (
+                <ColumnEditorBottom
+                  key={columnLayout.column.id}
+                  columnLayout={columnLayout}
+                  canMoveLeft={i > 0}
+                  canMoveRight={i < layout.columns.length - 1}
+                />
               ))}
               <div style={{ width: ADD_SLOT_WIDTH_PX }} />
             </div>
@@ -161,7 +166,7 @@ function AddColumnSlotTop({ heightM, onAdd }: { heightM: number; onAdd: () => vo
   return (
     <div className="flex shrink-0 flex-col items-center">
       <div className={cn(RESIZE_BUTTON_CLASS, "invisible mb-1")}>
-        <Plus className="size-4" />
+        <Plus className="size-5" />
       </div>
       <button
         type="button"
@@ -214,13 +219,17 @@ function FullDoorControl({ columnId, fullDoor }: { columnId: string; fullDoor: F
   );
 }
 
-/** Top half of a column: add-module button, module stack + height gauge, width gauge. */
+/** Top half of a column: add-module button, module stack + height gauge, width gauge.
+ * If the column is mounted above the floor, an empty gap of that height is drawn below
+ * the stack (inside the same floor-aligned box) so it visually "hangs" like a wall unit. */
 function ColumnEditorTop({ columnLayout }: { columnLayout: ColumnLayout }) {
   const column = columnLayout.column;
   const addModule = useDesignStore((s) => s.addModule);
 
   const widthPx = Math.max(columnLayout.width * PX_PER_M, 80);
-  const heightPx = Math.max(columnLayout.height * PX_PER_M, 40);
+  const stackHeightPx = Math.max(columnLayout.height * PX_PER_M, 40);
+  const mountPx = (column.mountHeightM ?? 0) * PX_PER_M;
+  const isEmpty = columnLayout.modules.length === 0;
 
   return (
     <div className="flex shrink-0 flex-col items-center">
@@ -230,29 +239,58 @@ function ColumnEditorTop({ columnLayout }: { columnLayout: ColumnLayout }) {
         onClick={() => addModule(column.id, "end")}
         title="Agregar módulo arriba"
       >
-        <Plus className="size-4" />
+        <Plus className="size-5" />
       </button>
       <div className="flex items-stretch gap-1.5">
-        <div className="flex flex-col-reverse overflow-hidden rounded border border-border" style={{ width: widthPx, height: heightPx }}>
-          {columnLayout.modules.map((rect) => (
-            <ModuleBox key={rect.module.id} columnId={column.id} rect={rect} />
-          ))}
-          {columnLayout.modules.length === 0 && (
-            <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">Vacío</div>
+        <div className="flex flex-col" style={{ width: widthPx }}>
+          <div
+            className={cn(
+              "flex flex-col-reverse overflow-hidden rounded border",
+              isEmpty ? "border-2 border-dashed border-border" : "border-border"
+            )}
+            style={{ width: widthPx, height: stackHeightPx }}
+          >
+            {columnLayout.modules.map((rect) => (
+              <ModuleBox key={rect.module.id} columnId={column.id} rect={rect} />
+            ))}
+            {isEmpty && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 text-center text-[10px] text-muted-foreground">
+                <span className="font-medium">Vacío</span>
+                <span>Agrega un módulo (+) o quita la columna (−)</span>
+              </div>
+            )}
+          </div>
+          {mountPx > 0 && (
+            <div
+              className="border-x border-dashed border-border/50"
+              style={{ height: mountPx }}
+              title={`Montada a ${(column.mountHeightM ?? 0).toFixed(2)} m del piso (espacio libre debajo)`}
+            />
           )}
         </div>
-        <HeightGauge heightPx={heightPx} label={columnLayout.height.toFixed(2)} />
+        <HeightGauge heightPx={stackHeightPx} label={columnLayout.height.toFixed(2)} />
       </div>
       <WidthGauge widthPx={widthPx} label={columnLayout.width.toFixed(2)} />
     </div>
   );
 }
 
-/** Bottom half of a column: add-module button, remove-column + width input, full-door control. */
-function ColumnEditorBottom({ columnLayout }: { columnLayout: ColumnLayout }) {
+/** Bottom half of a column: add-module button, move/remove column + width input,
+ * mount-height input (for wall-mounted / hanging units), full-door control. */
+function ColumnEditorBottom({
+  columnLayout,
+  canMoveLeft,
+  canMoveRight,
+}: {
+  columnLayout: ColumnLayout;
+  canMoveLeft: boolean;
+  canMoveRight: boolean;
+}) {
   const column = columnLayout.column;
   const setColumnWidth = useDesignStore((s) => s.setColumnWidth);
+  const setColumnMountHeight = useDesignStore((s) => s.setColumnMountHeight);
   const removeColumn = useDesignStore((s) => s.removeColumn);
+  const moveColumn = useDesignStore((s) => s.moveColumn);
   const addModule = useDesignStore((s) => s.addModule);
 
   const widthPx = Math.max(columnLayout.width * PX_PER_M, 80);
@@ -265,17 +303,37 @@ function ColumnEditorBottom({ columnLayout }: { columnLayout: ColumnLayout }) {
         onClick={() => addModule(column.id, "start")}
         title="Agregar módulo abajo"
       >
-        <Plus className="size-4" />
+        <Plus className="size-5" />
       </button>
-      <div className="mt-2 flex items-center justify-center gap-1">
+      <div className="mt-2 flex flex-wrap items-center justify-center gap-1">
+        <button
+          type="button"
+          className={RESIZE_BUTTON_CLASS}
+          onClick={() => moveColumn(column.id, "left")}
+          disabled={!canMoveLeft}
+          title="Mover columna a la izquierda"
+        >
+          <ArrowLeft className="size-4" />
+        </button>
         <button
           type="button"
           className={RESIZE_BUTTON_CLASS}
           onClick={() => removeColumn(column.id)}
           title="Quitar columna"
         >
-          <Minus className="size-4" />
+          <Minus className="size-5" />
         </button>
+        <button
+          type="button"
+          className={RESIZE_BUTTON_CLASS}
+          onClick={() => moveColumn(column.id, "right")}
+          disabled={!canMoveRight}
+          title="Mover columna a la derecha"
+        >
+          <ArrowRight className="size-4" />
+        </button>
+      </div>
+      <div className="mt-1.5 flex items-center justify-center gap-1">
         <input
           type="number"
           step={0.01}
@@ -284,7 +342,18 @@ function ColumnEditorBottom({ columnLayout }: { columnLayout: ColumnLayout }) {
           onChange={(e) => setColumnWidth(column.id, Number(e.target.value))}
           className="h-6 w-16 rounded border border-input bg-transparent text-center text-xs"
         />
-        <span className="text-[10px] text-muted-foreground">m</span>
+        <span className="text-[10px] text-muted-foreground">m ancho</span>
+      </div>
+      <div className="mt-1 flex items-center justify-center gap-1" title="Altura desde el piso — úsalo para muebles aéreos/colgantes">
+        <input
+          type="number"
+          step={0.01}
+          min={0}
+          value={column.mountHeightM ?? 0}
+          onChange={(e) => setColumnMountHeight(column.id, Number(e.target.value))}
+          className="h-6 w-16 rounded border border-input bg-transparent text-center text-xs"
+        />
+        <span className="text-[10px] text-muted-foreground">m piso</span>
       </div>
       <FullDoorControl columnId={column.id} fullDoor={column.fullDoor} />
     </div>

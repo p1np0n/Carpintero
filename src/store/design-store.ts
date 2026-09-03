@@ -22,6 +22,7 @@ interface DesignStoreState {
   removeColumn: (columnId: string) => void;
   setColumnWidth: (columnId: string, widthM: number) => void;
   setColumnFullDoor: (columnId: string, fullDoor: FullDoorConfig | null) => void;
+  setColumnMountHeight: (columnId: string, mountHeightM: number) => void;
   moveColumn: (columnId: string, direction: "left" | "right") => void;
 
   addModule: (columnId: string, position: "start" | "end") => void;
@@ -82,6 +83,11 @@ export const useDesignStore = create<DesignStoreState>((set) => ({
   setColumnFullDoor: (columnId, fullDoor) =>
     set((state) => ({
       design: mapColumn(state.design, columnId, (c) => ({ ...c, fullDoor: fullDoor ?? undefined })),
+    })),
+
+  setColumnMountHeight: (columnId, mountHeightM) =>
+    set((state) => ({
+      design: mapColumn(state.design, columnId, (c) => ({ ...c, mountHeightM: Math.max(0, mountHeightM) })),
     })),
 
   moveColumn: (columnId, direction) =>

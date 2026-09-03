@@ -358,7 +358,8 @@ function genFullDoorPieces(column: Column, columnX0: number, globalParams: Globa
   const innerWidth = round(W - 2 * thicknessM);
   const centerZ = depthM + thicknessM / 2;
   const doorHeight = round(H + overhangM);
-  const centerY = H / 2;
+  const mountY = column.mountHeightM ?? 0;
+  const centerY = mountY + H / 2;
 
   const piece = (p: Omit<PanelPiece, "id" | "moduleId" | "columnId">): PanelPiece => ({
     id: `${column.id}-fulldoor-${p.hinge ?? "single"}-${Math.random().toString(36).slice(2, 8)}`,
@@ -428,8 +429,9 @@ function genFullDoorPieces(column: Column, columnX0: number, globalParams: Globa
 
 export function computePanels(design: Design): PanelPiece[] {
   const { globalParams, columns } = design;
-  const { depthM, thicknessMm } = globalParams;
+  const { depthM, thicknessMm, backPanelThicknessMm } = globalParams;
   const thicknessM = thicknessMm / 1000;
+  const backThicknessM = (backPanelThicknessMm ?? thicknessMm) / 1000;
 
   const pieces: PanelPiece[] = [];
   let columnX0 = 0;
@@ -438,6 +440,7 @@ export function computePanels(design: Design): PanelPiece[] {
     const H = columnHeightM(column);
     const W = column.widthM;
     const innerWidth = round(W - 2 * thicknessM);
+    const mountY = column.mountHeightM ?? 0;
 
     // Fixed carcass pieces: two sides, back, top cap, bottom cap.
     pieces.push({
@@ -451,7 +454,7 @@ export function computePanels(design: Design): PanelPiece[] {
       thicknessMm,
       isHardware: false,
       centerX: columnX0 + thicknessM / 2,
-      centerY: H / 2,
+      centerY: mountY + H / 2,
       centerZ: depthM / 2,
       sizeX: thicknessM,
       sizeY: H,
@@ -468,7 +471,7 @@ export function computePanels(design: Design): PanelPiece[] {
       thicknessMm,
       isHardware: false,
       centerX: columnX0 + W - thicknessM / 2,
-      centerY: H / 2,
+      centerY: mountY + H / 2,
       centerZ: depthM / 2,
       sizeX: thicknessM,
       sizeY: H,
@@ -482,14 +485,14 @@ export function computePanels(design: Design): PanelPiece[] {
       orientation: "vertical-xy",
       widthM: innerWidth,
       heightM: H,
-      thicknessMm,
+      thicknessMm: backPanelThicknessMm ?? thicknessMm,
       isHardware: false,
       centerX: columnX0 + W / 2,
-      centerY: H / 2,
-      centerZ: thicknessM / 2,
+      centerY: mountY + H / 2,
+      centerZ: backThicknessM / 2,
       sizeX: innerWidth,
       sizeY: H,
-      sizeZ: thicknessM,
+      sizeZ: backThicknessM,
     });
     if (H > 0) {
       pieces.push({
@@ -503,7 +506,7 @@ export function computePanels(design: Design): PanelPiece[] {
         thicknessMm,
         isHardware: false,
         centerX: columnX0 + W / 2,
-        centerY: thicknessM / 2,
+        centerY: mountY + thicknessM / 2,
         centerZ: depthM / 2,
         sizeX: innerWidth,
         sizeY: thicknessM,
@@ -520,7 +523,7 @@ export function computePanels(design: Design): PanelPiece[] {
         thicknessMm,
         isHardware: false,
         centerX: columnX0 + W / 2,
-        centerY: H - thicknessM / 2,
+        centerY: mountY + H - thicknessM / 2,
         centerZ: depthM / 2,
         sizeX: innerWidth,
         sizeY: thicknessM,
@@ -528,7 +531,7 @@ export function computePanels(design: Design): PanelPiece[] {
       });
     }
 
-    let yBottom = 0;
+    let yBottom = mountY;
     for (const mod of column.modules) {
       pieces.push(...genModulePieces(mod, { column, columnX0, globalParams, yBottom }));
       yBottom += mod.heightM;

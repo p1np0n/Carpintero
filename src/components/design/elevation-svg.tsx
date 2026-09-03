@@ -175,7 +175,7 @@ export function ElevationSvg({ design, selectedModuleId, onSelectModule, classNa
           })}
           <rect
             x={0}
-            y={totalH - mm(col.height)}
+            y={totalH - mm(col.y) - mm(col.height)}
             width={mm(col.width)}
             height={mm(col.height)}
             fill="none"
@@ -187,7 +187,7 @@ export function ElevationSvg({ design, selectedModuleId, onSelectModule, classNa
             <FullDoorDecoration
               config={col.column.fullDoor}
               width={mm(col.width)}
-              y={totalH - mm(col.height)}
+              y={totalH - mm(col.y) - mm(col.height)}
               height={mm(col.height)}
             />
           )}

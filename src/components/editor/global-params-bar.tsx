@@ -52,6 +52,25 @@ export function GlobalParamsBar() {
           onChange={(e) => setGlobalParams({ overhangMm: Number(e.target.value) })}
         />
       </div>
+      <div className="flex items-center gap-2">
+        <Label htmlFor="back-thickness" className="text-xs text-muted-foreground" title="Opcional: espesor distinto para el fondo (ej. 3mm durolac/tercero delgado). Vacío = usa el espesor general.">
+          Espesor de fondo (mm)
+        </Label>
+        <Input
+          id="back-thickness"
+          type="number"
+          step={1}
+          min={2}
+          placeholder={String(globalParams.thicknessMm)}
+          className="h-7 w-20"
+          value={globalParams.backPanelThicknessMm ?? ""}
+          onChange={(e) =>
+            setGlobalParams({
+              backPanelThicknessMm: e.target.value === "" ? undefined : Number(e.target.value),
+            })
+          }
+        />
+      </div>
     </div>
   );
 }
