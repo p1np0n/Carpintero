@@ -19,7 +19,7 @@ const MIN_MODULE_PX = 26;
 const COLUMN_GAP_PX = 20;
 const ADD_SLOT_WIDTH_PX = 64;
 /** Shared classes for the square +/- controls that grow/shrink a column or its modules. */
-const RESIZE_BUTTON_CLASS = "flex size-11 shrink-0 items-center justify-center rounded-md border border-input bg-transparent transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40";
+const RESIZE_BUTTON_CLASS = "flex size-7 shrink-0 items-center justify-center rounded-md border border-input bg-transparent transition-colors hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-40";
 
 export function Editor2DPanel() {
   const design = useDesignStore((s) => s.design);
@@ -166,7 +166,7 @@ function AddColumnSlotTop({ heightM, onAdd }: { heightM: number; onAdd: () => vo
   return (
     <div className="flex shrink-0 flex-col items-center">
       <div className={cn(RESIZE_BUTTON_CLASS, "invisible mb-1")}>
-        <Plus className="size-5" />
+        <Plus className="size-3.5" />
       </div>
       <button
         type="button"
@@ -239,7 +239,7 @@ function ColumnEditorTop({ columnLayout }: { columnLayout: ColumnLayout }) {
         onClick={() => addModule(column.id, "end")}
         title="Agregar módulo arriba"
       >
-        <Plus className="size-5" />
+        <Plus className="size-3.5" />
       </button>
       <div className="flex items-stretch gap-1.5">
         <div className="flex flex-col" style={{ width: widthPx }}>
@@ -303,7 +303,7 @@ function ColumnEditorBottom({
         onClick={() => addModule(column.id, "start")}
         title="Agregar módulo abajo"
       >
-        <Plus className="size-5" />
+        <Plus className="size-3.5" />
       </button>
       <div className="mt-2 flex flex-wrap items-center justify-center gap-1">
         <button
@@ -313,7 +313,7 @@ function ColumnEditorBottom({
           disabled={!canMoveLeft}
           title="Mover columna a la izquierda"
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-3.5" />
         </button>
         <button
           type="button"
@@ -321,7 +321,7 @@ function ColumnEditorBottom({
           onClick={() => removeColumn(column.id)}
           title="Quitar columna"
         >
-          <Minus className="size-5" />
+          <Minus className="size-3.5" />
         </button>
         <button
           type="button"
@@ -330,7 +330,7 @@ function ColumnEditorBottom({
           disabled={!canMoveRight}
           title="Mover columna a la derecha"
         >
-          <ArrowRight className="size-4" />
+          <ArrowRight className="size-3.5" />
         </button>
       </div>
       <div className="mt-1.5 flex items-center justify-center gap-1">
