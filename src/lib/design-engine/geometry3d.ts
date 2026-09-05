@@ -1,5 +1,20 @@
 import type { CutlistRow } from "./cutlist";
-import type { PanelPiece } from "./panels";
+import type { PanelPiece, PanelRole } from "./panels";
+
+/** Base separation applied to every piece in "exploded" view mode, in meters. */
+const EXPLODE_BASE_DIST = 0.6;
+/** Extra separation added per stacking rank so vertically-stacked layers (shelves, caps,
+ * dividers, mouldings, rods, legs) fan out instead of sliding as one still-crowded block. */
+const EXPLODE_LAYER_GAP = 0.15;
+
+/** Piece roles that stack vertically within a column and should fan out by rank when exploded. */
+const VERTICAL_FAMILY_ROLES: readonly PanelRole[] = [
+  "shelf",
+  "top-moulding",
+  "bottom-moulding",
+  "hanging-rod",
+  "legs",
+];
 
 export interface Piece3D extends PanelPiece {
   cutlistId: string;
@@ -11,6 +26,8 @@ export interface Piece3D extends PanelPiece {
   openRotationX: number;
   /** unit-ish direction the piece is pushed along in "exploded" view mode */
   explodeDirection: [number, number, number];
+  /** meters to move along explodeDirection in "exploded" view mode */
+  explodeDistance: number;
 }
 
 export function pieceIdToCutlistId(rows: CutlistRow[]): Map<string, string> {
@@ -37,11 +54,33 @@ export function computePieces3D(panels: PanelPiece[], rows: CutlistRow[]): Piece
     }
   }
 
+  // Which side-panel piece is the LEFT one in its own column (smaller centerX) vs. the
+  // RIGHT one — comparing centerX to a fixed threshold only ever worked for the very
+  // first column, so every other column's sides all exploded toward the same +X side
+  // and overlapped their neighbor's.
+  const leftSideIdByColumnId = new Map<string, string>();
+  for (const columnId of new Set(panels.map((p) => p.columnId))) {
+    const [a, b] = panels.filter((p) => p.columnId === columnId && p.role === "side-panel");
+    if (a && b) leftSideIdByColumnId.set(columnId, a.centerX <= b.centerX ? a.id : b.id);
+  }
+
+  // Rank (bottom to top) of each vertically-stacked piece within its own column, so the
+  // exploded view can space layers further apart the further they already are from the
+  // floor instead of shifting the whole stack as one rigid, still-crowded block.
+  const verticalRankByPieceId = new Map<string, number>();
+  for (const columnId of new Set(panels.map((p) => p.columnId))) {
+    const verticals = panels
+      .filter((p) => p.columnId === columnId && VERTICAL_FAMILY_ROLES.includes(p.role))
+      .sort((a, b) => a.centerY - b.centerY);
+    verticals.forEach((p, rank) => verticalRankByPieceId.set(p.id, rank));
+  }
+
   return panels.map((p) => {
     let openTranslation: [number, number, number] = [0, 0, 0];
     let openRotationY = 0;
     let openRotationX = 0;
     let explodeDirection: [number, number, number] = [0, 0, 0];
+    let explodeDistance = EXPLODE_BASE_DIST;
 
     switch (p.role) {
       case "door-front":
@@ -65,18 +104,21 @@ export function computePieces3D(panels: PanelPiece[], rows: CutlistRow[]): Piece
         explodeDirection = [0, 0, -1];
         break;
       case "side-panel":
-        explodeDirection = [p.centerX < 0.001 ? -1 : 1, 0, 0];
+        explodeDirection = [leftSideIdByColumnId.get(p.columnId) === p.id ? -1 : 1, 0, 0];
         break;
       case "shelf":
       case "top-moulding":
       case "bottom-moulding":
         explodeDirection = [0, p.role === "bottom-moulding" ? -1 : 1, 0];
+        explodeDistance = EXPLODE_BASE_DIST + (verticalRankByPieceId.get(p.id) ?? 0) * EXPLODE_LAYER_GAP;
         break;
       case "hanging-rod":
         explodeDirection = [0, 1, 0];
+        explodeDistance = EXPLODE_BASE_DIST + (verticalRankByPieceId.get(p.id) ?? 0) * EXPLODE_LAYER_GAP;
         break;
       case "legs":
         explodeDirection = [0, -1, 0];
+        explodeDistance = EXPLODE_BASE_DIST + (verticalRankByPieceId.get(p.id) ?? 0) * EXPLODE_LAYER_GAP;
         break;
       default:
         explodeDirection = [0, 0, 0];
@@ -89,6 +131,7 @@ export function computePieces3D(panels: PanelPiece[], rows: CutlistRow[]): Piece
       openRotationY,
       openRotationX,
       explodeDirection,
+      explodeDistance,
     };
   });
 }

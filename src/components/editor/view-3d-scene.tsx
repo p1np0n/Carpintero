@@ -29,7 +29,7 @@ function getTransform(piece: Piece3D, mode: ViewMode3D) {
   }
 
   if (mode === "exploded") {
-    const dist = 0.45;
+    const dist = piece.explodeDistance;
     return {
       position: [
         base[0] + piece.explodeDirection[0] * dist,
@@ -128,7 +128,10 @@ export function View3DScene({ design, mode }: { design: Design; mode: ViewMode3D
   const height = designHeightM(design) || 1;
   const depth = design.globalParams.depthM || 0.45;
   const center: [number, number, number] = [width / 2, height / 2, depth / 2];
-  const maxDim = Math.max(width, height, depth, 0.5);
+  // Pieces spread out well beyond the design's own bounding box in "exploded" mode, so pull
+  // the camera back further to start with the whole assembly in frame instead of cropped.
+  const explodePadding = mode === "exploded" ? 1.4 : 0;
+  const maxDim = Math.max(width, height, depth, 0.5) + explodePadding;
 
   return (
     <Canvas camera={{ position: [center[0] + maxDim, center[1] + maxDim * 0.7, center[2] + maxDim * 1.4], fov: 40 }}>
