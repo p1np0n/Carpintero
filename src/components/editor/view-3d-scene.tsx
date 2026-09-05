@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, type ThreeEvent } from "@react-three/fiber";
 import { Edges, GizmoHelper, GizmoViewport, OrbitControls, Sparkles } from "@react-three/drei";
 import { computeDesignMemoized } from "@/lib/design-engine/compute";
 import type { Piece3D } from "@/lib/design-engine/geometry3d";
@@ -12,6 +12,11 @@ export type ViewMode3D = "solid" | "open" | "exploded";
 
 const GRAPHITE = "#a1a1aa";
 const GRAPHITE_SOFT = "#d4d4d8";
+const SELECTED_COLOR = "#60a5fa";
+
+/** Synthetic moduleIds used for pieces that belong to the column's fixed structure
+ * rather than any single editable module — these aren't selectable in the 2D editor. */
+const NON_MODULE_IDS = new Set(["__carcass__", "__fulldoor__"]);
 
 function getTransform(piece: Piece3D, mode: ViewMode3D) {
   const base: [number, number, number] = [piece.centerX, piece.centerY, piece.centerZ];
@@ -43,14 +48,46 @@ function getTransform(piece: Piece3D, mode: ViewMode3D) {
   return { position: base, rotationY: 0 };
 }
 
-function Piece3DMesh({ piece, mode }: { piece: Piece3D; mode: ViewMode3D }) {
-  const color = piece.isHardware ? GRAPHITE_SOFT : GRAPHITE;
+function Piece3DMesh({
+  piece,
+  mode,
+  selectedModuleId,
+  onSelectModule,
+}: {
+  piece: Piece3D;
+  mode: ViewMode3D;
+  selectedModuleId?: string | null;
+  onSelectModule?: (columnId: string, moduleId: string) => void;
+}) {
+  const isModulePiece = !NON_MODULE_IDS.has(piece.moduleId);
+  const isSelected = isModulePiece && piece.moduleId === selectedModuleId;
+  const color = isSelected ? SELECTED_COLOR : piece.isHardware ? GRAPHITE_SOFT : GRAPHITE;
+
+  // Clicking a piece in the 3D view selects its module, mirroring the selection back to
+  // the 2D elevation editor and the module properties panel (both read the same store).
+  const clickHandlers =
+    isModulePiece && onSelectModule
+      ? {
+          onClick: (e: ThreeEvent<MouseEvent>) => {
+            e.stopPropagation();
+            onSelectModule(piece.columnId, piece.moduleId);
+          },
+          onPointerOver: (e: ThreeEvent<PointerEvent>) => {
+            e.stopPropagation();
+            document.body.style.cursor = "pointer";
+          },
+          onPointerOut: (e: ThreeEvent<PointerEvent>) => {
+            e.stopPropagation();
+            document.body.style.cursor = "auto";
+          },
+        }
+      : {};
 
   if (piece.role === "hanging-rod" && piece.orientation === "rod") {
     const { position } = getTransform(piece, mode);
     const radius = Math.max(0.008, piece.sizeZ / 2);
     return (
-      <mesh position={position} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={position} rotation={[0, 0, Math.PI / 2]} {...clickHandlers}>
         <cylinderGeometry args={[radius, radius, piece.sizeX, 12]} />
         <meshStandardMaterial color={color} />
       </mesh>
@@ -63,9 +100,9 @@ function Piece3DMesh({ piece, mode }: { piece: Piece3D; mode: ViewMode3D }) {
       const offsetY = piece.hinge === "up" ? -piece.sizeY / 2 : piece.sizeY / 2;
       return (
         <group position={[piece.centerX, hingeY, piece.centerZ]} rotation={[piece.openRotationX, 0, 0]}>
-          <mesh position={[0, offsetY, 0]}>
+          <mesh position={[0, offsetY, 0]} {...clickHandlers}>
             <boxGeometry args={[piece.sizeX, piece.sizeY, piece.sizeZ]} />
-            <meshStandardMaterial color={color} transparent opacity={0.28} />
+            <meshStandardMaterial color={color} transparent opacity={isSelected ? 0.55 : 0.28} />
             <Edges color={color} />
           </mesh>
           {piece.handle && (
@@ -81,9 +118,9 @@ function Piece3DMesh({ piece, mode }: { piece: Piece3D; mode: ViewMode3D }) {
     const offsetX = piece.hinge === "left" ? piece.sizeX / 2 : -piece.sizeX / 2;
     return (
       <group position={[hingeX, piece.centerY, piece.centerZ]} rotation={[0, piece.openRotationY, 0]}>
-        <mesh position={[offsetX, 0, 0]}>
+        <mesh position={[offsetX, 0, 0]} {...clickHandlers}>
           <boxGeometry args={[piece.sizeX, piece.sizeY, piece.sizeZ]} />
-          <meshStandardMaterial color={color} transparent opacity={0.28} />
+          <meshStandardMaterial color={color} transparent opacity={isSelected ? 0.55 : 0.28} />
           <Edges color={color} />
         </mesh>
         {piece.handle && (
@@ -98,9 +135,9 @@ function Piece3DMesh({ piece, mode }: { piece: Piece3D; mode: ViewMode3D }) {
 
   const { position } = getTransform(piece, mode);
   return (
-    <mesh position={position}>
+    <mesh position={position} {...clickHandlers}>
       <boxGeometry args={[Math.max(piece.sizeX, 0.004), Math.max(piece.sizeY, 0.004), Math.max(piece.sizeZ, 0.004)]} />
-      <meshStandardMaterial color={color} transparent opacity={0.22} />
+      <meshStandardMaterial color={color} transparent opacity={isSelected ? 0.55 : 0.22} />
       <Edges color={color} />
       {piece.handle && (
         <mesh position={[0, 0, piece.sizeZ / 2]}>
@@ -112,18 +149,38 @@ function Piece3DMesh({ piece, mode }: { piece: Piece3D; mode: ViewMode3D }) {
   );
 }
 
-function FurnitureModel({ design, mode }: { design: Design; mode: ViewMode3D }) {
+function FurnitureModel({
+  design,
+  mode,
+  selectedModuleId,
+  onSelectModule,
+}: {
+  design: Design;
+  mode: ViewMode3D;
+  selectedModuleId?: string | null;
+  onSelectModule?: (columnId: string, moduleId: string) => void;
+}) {
   const { pieces3D } = computeDesignMemoized(design);
   return (
     <group>
       {pieces3D.map((p) => (
-        <Piece3DMesh key={p.id} piece={p} mode={mode} />
+        <Piece3DMesh key={p.id} piece={p} mode={mode} selectedModuleId={selectedModuleId} onSelectModule={onSelectModule} />
       ))}
     </group>
   );
 }
 
-export function View3DScene({ design, mode }: { design: Design; mode: ViewMode3D }) {
+export function View3DScene({
+  design,
+  mode,
+  selectedModuleId,
+  onSelectModule,
+}: {
+  design: Design;
+  mode: ViewMode3D;
+  selectedModuleId?: string | null;
+  onSelectModule?: (columnId: string, moduleId: string) => void;
+}) {
   const width = designWidthM(design) || 1;
   const height = designHeightM(design) || 1;
   const depth = design.globalParams.depthM || 0.45;
@@ -141,7 +198,7 @@ export function View3DScene({ design, mode }: { design: Design; mode: ViewMode3D
       <directionalLight position={[-3, 2, -2]} intensity={0.3} />
       <Sparkles count={60} scale={[maxDim * 2.5, maxDim * 2.5, maxDim * 2.5]} size={2} speed={0.15} color={GRAPHITE} opacity={0.25} position={center} />
       <React.Suspense fallback={null}>
-        <FurnitureModel design={design} mode={mode} />
+        <FurnitureModel design={design} mode={mode} selectedModuleId={selectedModuleId} onSelectModule={onSelectModule} />
       </React.Suspense>
       <OrbitControls target={center} makeDefault />
       <GizmoHelper alignment="bottom-right" margin={[64, 64]}>

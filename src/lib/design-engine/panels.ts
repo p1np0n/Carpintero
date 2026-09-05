@@ -367,9 +367,11 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
           type: subtype,
           heightM: subHeight,
         };
-        pieces.push(
-          ...genModulePieces(subModule, { ...ctx, yBottom: yBottom + i * subHeight })
-        );
+        const subPieces = genModulePieces(subModule, { ...ctx, yBottom: yBottom + i * subHeight });
+        // Keep the real (outer) module id on every repeated sub-piece so selecting any of
+        // them (e.g. clicking one in the 3D view) resolves back to the actual "multiple"
+        // module instead of a synthetic per-repetition id nothing else recognizes.
+        pieces.push(...subPieces.map((p) => ({ ...p, moduleId: mod.id })));
       }
       return pieces;
     }

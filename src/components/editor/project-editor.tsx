@@ -17,6 +17,8 @@ import type { ProjectRow } from "@/lib/project-types";
 export function ProjectEditor({ project, initialDesign }: { project: ProjectRow; initialDesign: Design }) {
   const loadProject = useDesignStore((s) => s.loadProject);
   const design = useDesignStore((s) => s.design);
+  const selectedModuleId = useDesignStore((s) => s.selectedModuleId);
+  const select = useDesignStore((s) => s.select);
 
   React.useEffect(() => {
     loadProject(project.id, project.name, initialDesign);
@@ -41,7 +43,11 @@ export function ProjectEditor({ project, initialDesign }: { project: ProjectRow;
           <GlobalParamsBar />
           <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
             <Editor2DPanel />
-            <View3DPanel design={design} />
+            <View3DPanel
+              design={design}
+              selectedModuleId={selectedModuleId}
+              onSelectModule={(columnId, moduleId) => select({ columnId, moduleId })}
+            />
           </div>
           <ModulePropertiesPanel />
         </TabsContent>

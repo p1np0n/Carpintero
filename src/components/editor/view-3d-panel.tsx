@@ -21,12 +21,20 @@ const MODES: { value: ViewMode3D; label: string; icon: React.ReactNode }[] = [
   { value: "exploded", label: "Explosionado", icon: <Boxes className="size-4" /> },
 ];
 
-export function View3DPanel({ design }: { design: Design }) {
+export function View3DPanel({
+  design,
+  selectedModuleId,
+  onSelectModule,
+}: {
+  design: Design;
+  selectedModuleId?: string | null;
+  onSelectModule?: (columnId: string, moduleId: string) => void;
+}) {
   const [mode, setMode] = React.useState<ViewMode3D>("solid");
 
   return (
     <div className="relative h-full min-h-64 min-w-0 bg-[#161310]">
-      <View3DScene design={design} mode={mode} />
+      <View3DScene design={design} mode={mode} selectedModuleId={selectedModuleId} onSelectModule={onSelectModule} />
       <div className="absolute right-3 top-3 flex gap-1 rounded-md border border-border/50 bg-background/80 p-1 backdrop-blur">
         {MODES.map((m) => (
           <Button

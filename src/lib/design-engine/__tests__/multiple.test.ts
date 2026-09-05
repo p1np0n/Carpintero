@@ -47,4 +47,13 @@ describe("module type 'multiple'", () => {
     const totalShelfQty = shelfRows.reduce((sum, r) => sum + r.qty, 0);
     expect(totalShelfQty).toBe(4); // 2 caps + 2 repeated shelves
   });
+
+  it("every repeated sub-piece keeps the real module id, not a synthetic per-repetition one", () => {
+    const design = designWithMultiple(3, "drawer");
+    const panels = computePanels(design);
+    const fronts = panels.filter((p) => p.role === "drawer-front");
+    // Selecting any repeated drawer in the 3D view must resolve back to module "m1" —
+    // a per-repetition id like "m1-0" wouldn't match any real module in the design.
+    expect(fronts.every((p) => p.moduleId === "m1")).toBe(true);
+  });
 });
