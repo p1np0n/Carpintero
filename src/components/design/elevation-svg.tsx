@@ -87,6 +87,27 @@ function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => n
   }
 }
 
+/** Vertical partition line(s) splitting a module into equal-width side-by-side sections —
+ * drawn on top of whatever the module's own type decoration already shows. */
+function VerticalDividerLines({ count, width, height }: { count: number; width: number; height: number }) {
+  const sectionWidth = width / (count + 1);
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <line
+          key={i}
+          x1={sectionWidth * (i + 1)}
+          y1={2}
+          x2={sectionWidth * (i + 1)}
+          y2={height - 2}
+          stroke={GRAPHITE}
+          strokeWidth={2}
+        />
+      ))}
+    </>
+  );
+}
+
 /** Overlay marking a column-wide door (spanning every module in the column) — an inset
  * dashed outline plus handle knob(s), drawn on top of the column's own outline. */
 function FullDoorDecoration({ config, width, y, height }: { config: FullDoorConfig; width: number; y: number; height: number }) {
@@ -182,6 +203,9 @@ export function ElevationSvg({ design, selectedModuleId, onSelectModule, classNa
                   strokeWidth={isSelected ? 2.5 : 1.5}
                 />
                 <ModuleDecoration rect={rect} mm={mm} />
+                {!!rect.module.verticalDividers && (
+                  <VerticalDividerLines count={rect.module.verticalDividers} width={mm(rect.width)} height={mm(rect.height)} />
+                )}
               </g>
             );
           })}

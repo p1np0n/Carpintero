@@ -13,7 +13,8 @@ export type PanelRole =
   | "top-moulding"
   | "bottom-moulding"
   | "hanging-rod"
-  | "legs";
+  | "legs"
+  | "divider";
 
 /** How a piece's two "cut" dimensions (widthM/heightM) map onto 3D axes. */
 export type Orientation = "vertical-xy" | "horizontal-xz" | "vertical-yz" | "rod" | "hardware";
@@ -56,6 +57,45 @@ function round(n: number, dp = 5): number {
   return Math.round(n * f) / f;
 }
 
+/** Vertical divider panels splitting a module's own compartment into equal-width,
+ * side-by-side sections — independent of the module's type-specific pieces (shelf
+ * board, doors, etc.), so they layer on top of whatever that type already generates. */
+function genVerticalDividerPieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
+  const count = mod.verticalDividers ?? 0;
+  if (count <= 0) return [];
+
+  const { column, columnX0, globalParams, yBottom } = ctx;
+  const { depthM, thicknessMm } = globalParams;
+  const thicknessM = thicknessMm / 1000;
+  const W = column.widthM;
+  const innerWidth = round(W - 2 * thicknessM);
+  const innerX0 = columnX0 + thicknessM;
+  const sectionWidth = innerWidth / (count + 1);
+  const moduleHeight = mod.heightM;
+
+  const pieces: PanelPiece[] = [];
+  for (let i = 0; i < count; i += 1) {
+    pieces.push({
+      id: `${mod.id}-divider-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      moduleId: mod.id,
+      columnId: column.id,
+      role: "divider",
+      orientation: "vertical-yz",
+      widthM: depthM,
+      heightM: moduleHeight,
+      thicknessMm,
+      isHardware: false,
+      centerX: innerX0 + sectionWidth * (i + 1),
+      centerY: yBottom + moduleHeight / 2,
+      centerZ: depthM / 2,
+      sizeX: thicknessM,
+      sizeY: moduleHeight,
+      sizeZ: depthM,
+    });
+  }
+  return pieces;
+}
+
 function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
   const { column, columnX0, globalParams, yBottom } = ctx;
   const { depthM, thicknessMm, overhangMm } = globalParams;
@@ -75,7 +115,8 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
     ...p,
   });
 
-  switch (mod.type) {
+  const typePieces = ((): PanelPiece[] => {
+    switch (mod.type) {
     case "shelf":
       return [
         piece({
@@ -378,7 +419,10 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
 
     default:
       return [];
-  }
+    }
+  })();
+
+  return [...typePieces, ...genVerticalDividerPieces(mod, ctx)];
 }
 
 /** A door (or pair of doors) covering a column's full height, regardless of how many

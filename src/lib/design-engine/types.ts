@@ -53,6 +53,10 @@ export interface Module {
 
   /** type === "top-moulding" | "bottom-moulding": trim depth (front overhang). */
   mouldingDepthMm?: number;
+
+  /** Number of vertical divider panels splitting this module's own compartment into
+   * that many + 1 equal-width side-by-side sections (e.g. 1 divider = 2 sections). */
+  verticalDividers?: number;
 }
 
 /** A single door (or pair of doors) covering the column's full height, in front of

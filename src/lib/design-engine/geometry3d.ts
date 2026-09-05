@@ -120,6 +120,9 @@ export function computePieces3D(panels: PanelPiece[], rows: CutlistRow[]): Piece
         explodeDirection = [0, -1, 0];
         explodeDistance = EXPLODE_BASE_DIST + (verticalRankByPieceId.get(p.id) ?? 0) * EXPLODE_LAYER_GAP;
         break;
+      case "divider":
+        explodeDirection = [0, 0, 1];
+        break;
       default:
         explodeDirection = [0, 0, 0];
     }

@@ -28,6 +28,7 @@ export const PANEL_ROLE_LABELS: Record<PanelRole, string> = {
   "bottom-moulding": "Zócalo inferior",
   "hanging-rod": "Barral colgador",
   legs: "Pata",
+  divider: "Divisor vertical",
 };
 
 export const ORIENTATION_LABELS: Record<Orientation, string> = {

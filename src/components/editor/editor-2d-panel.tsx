@@ -389,6 +389,13 @@ function ModuleBox({ columnId, rect }: { columnId: string; rect: ModuleRect }) {
         isSelected && "border-2 border-primary bg-primary text-primary-foreground hover:bg-primary"
       )}
     >
+      {Array.from({ length: rect.module.verticalDividers ?? 0 }).map((_, i, arr) => (
+        <div
+          key={i}
+          className={cn("pointer-events-none absolute inset-y-0 w-px", isSelected ? "bg-primary-foreground/70" : "bg-foreground/50")}
+          style={{ left: `${((i + 1) / (arr.length + 1)) * 100}%` }}
+        />
+      ))}
       <span className="text-[13px] font-semibold">{MODULE_TYPE_LABELS[rect.module.type]}</span>
       {showDetail && (
         <span

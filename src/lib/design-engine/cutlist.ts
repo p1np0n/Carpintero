@@ -13,6 +13,7 @@ const FAMILY_PREFIX: Record<PanelRole, string> = {
   "bottom-moulding": "M",
   "hanging-rod": "R",
   legs: "L",
+  divider: "V",
 };
 
 export interface CutlistRow {
