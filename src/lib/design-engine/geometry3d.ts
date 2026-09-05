@@ -26,6 +26,17 @@ export function pieceIdToCutlistId(rows: CutlistRow[]): Map<string, string> {
 export function computePieces3D(panels: PanelPiece[], rows: CutlistRow[]): Piece3D[] {
   const cutlistIdByPieceId = pieceIdToCutlistId(rows);
 
+  // A drawer's front/back/sides/bottom must all pull out by the same distance in "open"
+  // mode or the box drifts apart from its own front. Each piece's own sizeZ isn't a valid
+  // stand-in for that distance (front/back are as thin as the material, not the drawer's
+  // depth), so capture the box's real depth once per module from its side panel instead.
+  const drawerDepthByModuleId = new Map<string, number>();
+  for (const p of panels) {
+    if (p.role === "drawer-side") {
+      drawerDepthByModuleId.set(p.moduleId, p.sizeZ);
+    }
+  }
+
   return panels.map((p) => {
     let openTranslation: [number, number, number] = [0, 0, 0];
     let openRotationY = 0;
@@ -44,10 +55,12 @@ export function computePieces3D(panels: PanelPiece[], rows: CutlistRow[]): Piece
       case "drawer-front":
       case "drawer-back":
       case "drawer-side":
-      case "drawer-bottom":
-        openTranslation = [0, 0, p.sizeZ + 0.35];
+      case "drawer-bottom": {
+        const drawerDepth = drawerDepthByModuleId.get(p.moduleId) ?? p.sizeZ;
+        openTranslation = [0, 0, drawerDepth + 0.35];
         explodeDirection = [0, 0, 1];
         break;
+      }
       case "back-panel":
         explodeDirection = [0, 0, -1];
         break;
