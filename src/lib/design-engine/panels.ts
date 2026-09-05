@@ -186,7 +186,6 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
     case "bottom-moulding": {
       const depthMm = mod.mouldingDepthMm ?? 40;
       const dM = depthMm / 1000;
-      const isTop = mod.type === "top-moulding";
       return [
         piece({
           role: mod.type,
@@ -196,10 +195,12 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
           thicknessMm,
           isHardware: false,
           centerX: centerXCol,
-          centerY: isTop ? yTop - thicknessM / 2 : yBottom + thicknessM / 2,
+          // Fills the module's entire reserved height (not just a thin, material-thickness
+          // sliver at one edge) so the trim reads as a complete band, not a partial one.
+          centerY: yBottom + moduleHeight / 2,
           centerZ: depthM - dM / 2,
           sizeX: W,
-          sizeY: thicknessM,
+          sizeY: moduleHeight,
           sizeZ: dM,
         }),
       ];

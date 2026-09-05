@@ -83,4 +83,16 @@ describe("computePanels", () => {
     // only the fixed carcass pieces (2 sides + back + 2 caps = 5)
     expect(panels).toHaveLength(5);
   });
+
+  it("bottom-moulding fills its entire reserved module height, not just a thin sliver", () => {
+    const design = designWithModules([
+      { id: "m1", type: "bottom-moulding", heightM: 0.1, mouldingDepthMm: 40 },
+      { id: "m2", type: "shelf", heightM: 0.5 },
+    ]);
+    const panels = computePanels(design);
+    const moulding = panels.find((p) => p.role === "bottom-moulding")!;
+
+    expect(moulding.sizeY).toBeCloseTo(0.1, 5);
+    expect(moulding.centerY).toBeCloseTo(0.05, 5); // centered within its 0 to 0.1 slot
+  });
 });
