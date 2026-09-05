@@ -100,6 +100,9 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
     case "hanging-rod": {
       const dMm = mod.rodDiameterMm ?? 25;
       const dM = dMm / 1000;
+      const rodCenterY = yTop - 0.05;
+      const rodCenterZ = depthM * 0.7;
+      const bracketSize = Math.max(dM * 1.6, 0.03);
       return [
         piece({
           role: "hanging-rod",
@@ -109,11 +112,41 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
           thicknessMm: dMm,
           isHardware: true,
           centerX: centerXCol,
-          centerY: yTop - 0.05,
-          centerZ: depthM * 0.7,
+          centerY: rodCenterY,
+          centerZ: rodCenterZ,
           sizeX: innerWidth,
           sizeY: dM,
           sizeZ: dM,
+        }),
+        // End brackets mounted flush against each inner side wall, so the rod reads as an
+        // installed fixture rather than a bare line floating in empty space.
+        piece({
+          role: "hanging-rod",
+          orientation: "hardware",
+          widthM: bracketSize,
+          heightM: bracketSize,
+          thicknessMm: dMm,
+          isHardware: true,
+          centerX: columnX0 + thicknessM + bracketSize / 2,
+          centerY: rodCenterY,
+          centerZ: rodCenterZ,
+          sizeX: bracketSize,
+          sizeY: bracketSize,
+          sizeZ: bracketSize,
+        }),
+        piece({
+          role: "hanging-rod",
+          orientation: "hardware",
+          widthM: bracketSize,
+          heightM: bracketSize,
+          thicknessMm: dMm,
+          isHardware: true,
+          centerX: columnX0 + W - thicknessM - bracketSize / 2,
+          centerY: rodCenterY,
+          centerZ: rodCenterZ,
+          sizeX: bracketSize,
+          sizeY: bracketSize,
+          sizeZ: bracketSize,
         }),
       ];
     }

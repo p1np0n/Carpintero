@@ -46,7 +46,7 @@ function getTransform(piece: Piece3D, mode: ViewMode3D) {
 function Piece3DMesh({ piece, mode }: { piece: Piece3D; mode: ViewMode3D }) {
   const color = piece.isHardware ? GRAPHITE_SOFT : GRAPHITE;
 
-  if (piece.role === "hanging-rod") {
+  if (piece.role === "hanging-rod" && piece.orientation === "rod") {
     const { position } = getTransform(piece, mode);
     const radius = Math.max(0.008, piece.sizeZ / 2);
     return (

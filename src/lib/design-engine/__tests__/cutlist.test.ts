@@ -64,7 +64,7 @@ describe("computeCutlist", () => {
     const cutlist = computeCutlist(panels);
     const totals = computeCutlistTotals(cutlist);
 
-    expect(totals.totalHardwarePieces).toBe(1);
+    expect(totals.totalHardwarePieces).toBe(3); // the rod plus its two end brackets
     expect(totals.totalPanelPieces).toBeGreaterThan(0); // carcass pieces are still panels
     expect(totals.totalAreaSqm).toBeGreaterThan(0);
   });

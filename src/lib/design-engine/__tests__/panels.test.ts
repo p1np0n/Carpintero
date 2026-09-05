@@ -66,10 +66,13 @@ describe("computePanels", () => {
       { id: "m2", type: "legs", heightM: 0.1, legCount: 4 },
     ]);
     const panels = computePanels(design);
-    const rod = panels.filter((p) => p.role === "hanging-rod");
+    const rodPieces = panels.filter((p) => p.role === "hanging-rod");
     const legs = panels.filter((p) => p.role === "legs");
-    expect(rod).toHaveLength(1);
-    expect(rod[0].isHardware).toBe(true);
+    // The rod itself, plus one mounting bracket at each end wall.
+    expect(rodPieces).toHaveLength(3);
+    expect(rodPieces.every((p) => p.isHardware)).toBe(true);
+    expect(rodPieces.filter((p) => p.orientation === "rod")).toHaveLength(1);
+    expect(rodPieces.filter((p) => p.orientation === "hardware")).toHaveLength(2);
     expect(legs).toHaveLength(4);
     expect(legs.every((l) => l.isHardware)).toBe(true);
   });
