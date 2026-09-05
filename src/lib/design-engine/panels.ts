@@ -40,7 +40,7 @@ export interface PanelPiece {
   sizeX: number;
   sizeY: number;
   sizeZ: number;
-  hinge?: "left" | "right";
+  hinge?: "left" | "right" | "up" | "down";
   handle?: boolean;
 }
 

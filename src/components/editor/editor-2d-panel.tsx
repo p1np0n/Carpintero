@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowLeft, ArrowRight, ArrowUpDown, Plus, Minus } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpDown, Copy, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDesignStore } from "@/store/design-store";
@@ -182,11 +182,13 @@ function AddColumnSlotTop({ heightM, onAdd }: { heightM: number; onAdd: () => vo
   );
 }
 
-const FULL_DOOR_OPTIONS: { value: "none" | "left" | "right" | "double"; label: string }[] = [
+const FULL_DOOR_OPTIONS: { value: "none" | "left" | "right" | "double" | "up" | "down"; label: string }[] = [
   { value: "none", label: "Sin puerta" },
   { value: "left", label: "Izq." },
   { value: "right", label: "Der." },
   { value: "double", label: "Doble" },
+  { value: "up", label: "Arriba" },
+  { value: "down", label: "Abajo" },
 ];
 
 function FullDoorControl({ columnId, fullDoor }: { columnId: string; fullDoor: FullDoorConfig | undefined }) {
@@ -290,6 +292,7 @@ function ColumnEditorBottom({
   const setColumnWidth = useDesignStore((s) => s.setColumnWidth);
   const setColumnMountHeight = useDesignStore((s) => s.setColumnMountHeight);
   const removeColumn = useDesignStore((s) => s.removeColumn);
+  const duplicateColumn = useDesignStore((s) => s.duplicateColumn);
   const moveColumn = useDesignStore((s) => s.moveColumn);
   const addModule = useDesignStore((s) => s.addModule);
 
@@ -331,6 +334,14 @@ function ColumnEditorBottom({
           title="Mover columna a la derecha"
         >
           <ArrowRight className="size-3.5" />
+        </button>
+        <button
+          type="button"
+          className={RESIZE_BUTTON_CLASS}
+          onClick={() => duplicateColumn(column.id)}
+          title="Duplicar columna completa"
+        >
+          <Copy className="size-3.5" />
         </button>
       </div>
       <div className="mt-1.5 flex items-center justify-center gap-1">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Rows2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ export function ModulePropertiesPanel() {
   const setModuleType = useDesignStore((s) => s.setModuleType);
   const updateModuleProps = useDesignStore((s) => s.updateModuleProps);
   const removeModule = useDesignStore((s) => s.removeModule);
+  const splitModule = useDesignStore((s) => s.splitModule);
   const select = useDesignStore((s) => s.select);
 
   if (!column || !mod) {
@@ -149,9 +150,19 @@ export function ModulePropertiesPanel() {
       )}
 
       <Button
-        variant="destructive"
+        variant="outline"
         size="sm"
         className="ml-auto"
+        disabled={mod.heightM / 2 < 0.02}
+        title="Divide este módulo en dos módulos apilados, cada uno con la mitad de la altura"
+        onClick={() => splitModule(column.id, mod.id)}
+      >
+        <Rows2 /> Dividir módulo
+      </Button>
+
+      <Button
+        variant="destructive"
+        size="sm"
         onClick={() => {
           removeModule(column.id, mod.id);
           select(null);

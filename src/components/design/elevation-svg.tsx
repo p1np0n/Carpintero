@@ -104,6 +104,18 @@ function FullDoorDecoration({ config, width, y, height }: { config: FullDoorConf
     );
   }
 
+  if (config.hinge === "up" || config.hinge === "down") {
+    const knobY = config.hinge === "up" ? y + height - height * 0.08 : y + height * 0.08;
+    const hingeLineY = config.hinge === "up" ? y + 4 : y + height - 4;
+    return (
+      <>
+        <rect x={3} y={y + 3} width={width - 6} height={height - 6} fill="none" stroke={GRAPHITE} strokeWidth={1.5} strokeDasharray="3 3" />
+        <line x1={6} y1={hingeLineY} x2={width - 6} y2={hingeLineY} stroke={GRAPHITE} strokeWidth={2.5} />
+        <circle cx={width / 2} cy={knobY} r={4} fill={GRAPHITE} />
+      </>
+    );
+  }
+
   const knobX = config.hinge === "left" ? width - width * 0.08 : width * 0.08;
   return (
     <>

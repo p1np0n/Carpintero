@@ -20,6 +20,7 @@ interface DesignStoreState {
 
   addColumn: (position: "start" | "end") => void;
   removeColumn: (columnId: string) => void;
+  duplicateColumn: (columnId: string) => void;
   setColumnWidth: (columnId: string, widthM: number) => void;
   setColumnFullDoor: (columnId: string, fullDoor: FullDoorConfig | null) => void;
   setColumnMountHeight: (columnId: string, mountHeightM: number) => void;
@@ -27,6 +28,7 @@ interface DesignStoreState {
 
   addModule: (columnId: string, position: "start" | "end") => void;
   removeModule: (columnId: string, moduleId: string) => void;
+  splitModule: (columnId: string, moduleId: string) => void;
   setModuleHeight: (columnId: string, moduleId: string, heightM: number) => void;
   setModuleType: (columnId: string, moduleId: string, type: ModuleType) => void;
   updateModuleProps: (columnId: string, moduleId: string, patch: Partial<Module>) => void;
@@ -75,6 +77,21 @@ export const useDesignStore = create<DesignStoreState>((set) => ({
       selectedModuleId: state.selectedColumnId === columnId ? null : state.selectedModuleId,
     })),
 
+  duplicateColumn: (columnId) =>
+    set((state) => {
+      const idx = state.design.columns.findIndex((c) => c.id === columnId);
+      if (idx < 0) return {};
+      const original = state.design.columns[idx];
+      const clone: Column = {
+        ...original,
+        id: nextId("col"),
+        modules: original.modules.map((m) => ({ ...m, id: nextId("mod") })),
+      };
+      const columns = [...state.design.columns];
+      columns.splice(idx + 1, 0, clone);
+      return { design: { ...state.design, columns } };
+    }),
+
   setColumnWidth: (columnId, widthM) =>
     set((state) => ({
       design: mapColumn(state.design, columnId, (c) => ({ ...c, widthM: Math.max(0.1, widthM) })),
@@ -112,12 +129,41 @@ export const useDesignStore = create<DesignStoreState>((set) => ({
     }),
 
   removeModule: (columnId, moduleId) =>
+    set((state) => {
+      const column = state.design.columns.find((c) => c.id === columnId);
+      if (!column) return {};
+      const remaining = column.modules.filter((m) => m.id !== moduleId);
+
+      // Deleting the last module in a column leaves an empty shell with nothing to
+      // show — remove the column itself instead of stranding a dangling empty box.
+      if (remaining.length === 0) {
+        return {
+          design: { ...state.design, columns: state.design.columns.filter((c) => c.id !== columnId) },
+          selectedColumnId: state.selectedColumnId === columnId ? null : state.selectedColumnId,
+          selectedModuleId: null,
+        };
+      }
+
+      return {
+        design: mapColumn(state.design, columnId, (c) => ({ ...c, modules: remaining })),
+        selectedModuleId: state.selectedModuleId === moduleId ? null : state.selectedModuleId,
+      };
+    }),
+
+  splitModule: (columnId, moduleId) =>
     set((state) => ({
-      design: mapColumn(state.design, columnId, (c) => ({
-        ...c,
-        modules: c.modules.filter((m) => m.id !== moduleId),
-      })),
-      selectedModuleId: state.selectedModuleId === moduleId ? null : state.selectedModuleId,
+      design: mapColumn(state.design, columnId, (c) => {
+        const idx = c.modules.findIndex((m) => m.id === moduleId);
+        if (idx < 0) return c;
+        const target = c.modules[idx];
+        const halfHeight = target.heightM / 2;
+        if (halfHeight < 0.02) return c;
+        const first: Module = { ...target, heightM: halfHeight };
+        const second: Module = { ...target, id: nextId("mod"), heightM: halfHeight };
+        const modules = [...c.modules];
+        modules.splice(idx, 1, first, second);
+        return { ...c, modules };
+      }),
     })),
 
   setModuleHeight: (columnId, moduleId, heightM) =>

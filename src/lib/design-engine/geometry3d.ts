@@ -5,8 +5,10 @@ export interface Piece3D extends PanelPiece {
   cutlistId: string;
   /** applied in "open" view mode, meters */
   openTranslation: [number, number, number];
-  /** applied in "open" view mode, radians, pivoted at the hinge edge */
+  /** applied in "open" view mode, radians, pivoted at the hinge edge (left/right hinge) */
   openRotationY: number;
+  /** applied in "open" view mode, radians, pivoted at the hinge edge (up/down hinge) */
+  openRotationX: number;
   /** unit-ish direction the piece is pushed along in "exploded" view mode */
   explodeDirection: [number, number, number];
 }
@@ -27,11 +29,16 @@ export function computePieces3D(panels: PanelPiece[], rows: CutlistRow[]): Piece
   return panels.map((p) => {
     let openTranslation: [number, number, number] = [0, 0, 0];
     let openRotationY = 0;
+    let openRotationX = 0;
     let explodeDirection: [number, number, number] = [0, 0, 0];
 
     switch (p.role) {
       case "door-front":
-        openRotationY = p.hinge === "left" ? -Math.PI / 2.2 : Math.PI / 2.2;
+        if (p.hinge === "up" || p.hinge === "down") {
+          openRotationX = p.hinge === "up" ? Math.PI / 2.2 : -Math.PI / 2.2;
+        } else {
+          openRotationY = p.hinge === "left" ? -Math.PI / 2.2 : Math.PI / 2.2;
+        }
         explodeDirection = [0, 0, 1];
         break;
       case "drawer-front":
@@ -67,6 +74,7 @@ export function computePieces3D(panels: PanelPiece[], rows: CutlistRow[]): Piece
       cutlistId: cutlistIdByPieceId.get(p.id) ?? "?",
       openTranslation,
       openRotationY,
+      openRotationX,
       explodeDirection,
     };
   });

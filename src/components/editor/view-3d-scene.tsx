@@ -58,6 +58,25 @@ function Piece3DMesh({ piece, mode }: { piece: Piece3D; mode: ViewMode3D }) {
   }
 
   if (piece.role === "door-front" && mode === "open") {
+    if (piece.hinge === "up" || piece.hinge === "down") {
+      const hingeY = piece.hinge === "up" ? piece.centerY + piece.sizeY / 2 : piece.centerY - piece.sizeY / 2;
+      const offsetY = piece.hinge === "up" ? -piece.sizeY / 2 : piece.sizeY / 2;
+      return (
+        <group position={[piece.centerX, hingeY, piece.centerZ]} rotation={[piece.openRotationX, 0, 0]}>
+          <mesh position={[0, offsetY, 0]}>
+            <boxGeometry args={[piece.sizeX, piece.sizeY, piece.sizeZ]} />
+            <meshStandardMaterial color={color} transparent opacity={0.28} />
+            <Edges color={color} />
+          </mesh>
+          {piece.handle && (
+            <mesh position={[0, offsetY + (piece.hinge === "up" ? -piece.sizeY * 0.35 : piece.sizeY * 0.35), piece.sizeZ]}>
+              <sphereGeometry args={[0.012, 8, 8]} />
+              <meshStandardMaterial color={color} />
+            </mesh>
+          )}
+        </group>
+      );
+    }
     const hingeX = piece.hinge === "left" ? piece.centerX - piece.sizeX / 2 : piece.centerX + piece.sizeX / 2;
     const offsetX = piece.hinge === "left" ? piece.sizeX / 2 : -piece.sizeX / 2;
     return (

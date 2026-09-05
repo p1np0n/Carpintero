@@ -58,7 +58,7 @@ export interface Module {
 /** A single door (or pair of doors) covering the column's full height, in front of
  * whatever modules it contains — independent of any per-module "doors" module. */
 export interface FullDoorConfig {
-  hinge: "left" | "right" | "double";
+  hinge: "left" | "right" | "double" | "up" | "down";
   handle?: boolean;
 }
 
