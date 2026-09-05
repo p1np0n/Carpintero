@@ -565,9 +565,40 @@ export function computePanels(design: Design): PanelPiece[] {
     }
 
     let yBottom = mountY;
-    for (const mod of column.modules) {
+    for (let i = 0; i < column.modules.length; i += 1) {
+      const mod = column.modules[i];
       pieces.push(...genModulePieces(mod, { column, columnX0, globalParams, yBottom }));
-      yBottom += mod.heightM;
+      const yTop = yBottom + mod.heightM;
+
+      // A physical board separating this module from the next one, unless one of them
+      // already places a board at this exact boundary (a "shelf" module puts one at its
+      // own top; a moulding module puts one at its own top/bottom) — avoids a doubled-up
+      // board and gives every other module pair (e.g. two stacked hanging-rod sections)
+      // a visible wooden divider instead of an invisible seam.
+      const nextMod = column.modules[i + 1];
+      const thisProvidesBoard = mod.type === "shelf" || mod.type === "top-moulding";
+      const nextProvidesBoard = nextMod?.type === "bottom-moulding";
+      if (nextMod && !thisProvidesBoard && !nextProvidesBoard) {
+        pieces.push({
+          id: `${column.id}-divider-${i}`,
+          moduleId: "__carcass__",
+          columnId: column.id,
+          role: "shelf",
+          orientation: "horizontal-xz",
+          widthM: innerWidth,
+          heightM: depthM,
+          thicknessMm,
+          isHardware: false,
+          centerX: columnX0 + W / 2,
+          centerY: yTop - thicknessM / 2,
+          centerZ: depthM / 2,
+          sizeX: innerWidth,
+          sizeY: thicknessM,
+          sizeZ: depthM,
+        });
+      }
+
+      yBottom = yTop;
     }
 
     pieces.push(...genFullDoorPieces(column, columnX0, globalParams, H));
