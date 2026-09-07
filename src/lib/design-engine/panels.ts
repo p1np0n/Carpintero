@@ -695,3 +695,14 @@ export function computePanels(design: Design): PanelPiece[] {
 
   return pieces;
 }
+
+/** Whether a piece would actually be visible looking at the furniture from the front —
+ * used to decide which cutlist ID labels to draw on the front elevation without cluttering
+ * it with boards that are hidden behind a front (drawer internals, the back panel) or
+ * mounting hardware that has no board of its own (hanging-rod brackets). */
+export function isFrontVisiblePanel(p: PanelPiece): boolean {
+  if (p.role === "back-panel") return false;
+  if (p.role === "drawer-back" || p.role === "drawer-side" || p.role === "drawer-bottom") return false;
+  if (p.role === "hanging-rod" && p.orientation === "hardware") return false;
+  return true;
+}

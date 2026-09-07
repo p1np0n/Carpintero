@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
-import { Edges, GizmoHelper, GizmoViewport, OrbitControls, Sparkles } from "@react-three/drei";
+import { Billboard, Edges, GizmoHelper, GizmoViewport, OrbitControls, Sparkles, Text } from "@react-three/drei";
 import { computeDesignMemoized } from "@/lib/design-engine/compute";
 import type { Piece3D } from "@/lib/design-engine/geometry3d";
 import type { Design } from "@/lib/design-engine/types";
@@ -48,6 +48,18 @@ function getTransform(piece: Piece3D, mode: ViewMode3D) {
   return { position: base, rotationY: 0 };
 }
 
+/** The cutlist ID (E1, S2, D3…) floating above a piece, always facing the camera so it
+ * stays readable regardless of the piece's own rotation or the current orbit angle. */
+function PieceIdLabel({ position, text }: { position: [number, number, number]; text: string }) {
+  return (
+    <Billboard position={position}>
+      <Text fontSize={0.028} color="#facc15" outlineWidth={0.003} outlineColor="#000000" anchorX="center" anchorY="middle">
+        {text}
+      </Text>
+    </Billboard>
+  );
+}
+
 function Piece3DMesh({
   piece,
   mode,
@@ -87,10 +99,13 @@ function Piece3DMesh({
     const { position } = getTransform(piece, mode);
     const radius = Math.max(0.008, piece.sizeZ / 2);
     return (
-      <mesh position={position} rotation={[0, 0, Math.PI / 2]} {...clickHandlers}>
-        <cylinderGeometry args={[radius, radius, piece.sizeX, 12]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
+      <>
+        <mesh position={position} rotation={[0, 0, Math.PI / 2]} {...clickHandlers}>
+          <cylinderGeometry args={[radius, radius, piece.sizeX, 12]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+        <PieceIdLabel position={position} text={piece.cutlistId} />
+      </>
     );
   }
 
@@ -98,54 +113,65 @@ function Piece3DMesh({
     if (piece.hinge === "up" || piece.hinge === "down") {
       const hingeY = piece.hinge === "up" ? piece.centerY + piece.sizeY / 2 : piece.centerY - piece.sizeY / 2;
       const offsetY = piece.hinge === "up" ? -piece.sizeY / 2 : piece.sizeY / 2;
+      const groupPosition: [number, number, number] = [piece.centerX, hingeY, piece.centerZ];
       return (
-        <group position={[piece.centerX, hingeY, piece.centerZ]} rotation={[piece.openRotationX, 0, 0]}>
-          <mesh position={[0, offsetY, 0]} {...clickHandlers}>
+        <>
+          <group position={groupPosition} rotation={[piece.openRotationX, 0, 0]}>
+            <mesh position={[0, offsetY, 0]} {...clickHandlers}>
+              <boxGeometry args={[piece.sizeX, piece.sizeY, piece.sizeZ]} />
+              <meshStandardMaterial color={color} transparent opacity={isSelected ? 0.55 : 0.28} />
+              <Edges color={color} />
+            </mesh>
+            {piece.handle && (
+              <mesh position={[0, offsetY + (piece.hinge === "up" ? -piece.sizeY * 0.35 : piece.sizeY * 0.35), piece.sizeZ]}>
+                <sphereGeometry args={[0.012, 8, 8]} />
+                <meshStandardMaterial color={color} />
+              </mesh>
+            )}
+          </group>
+          <PieceIdLabel position={groupPosition} text={piece.cutlistId} />
+        </>
+      );
+    }
+    const hingeX = piece.hinge === "left" ? piece.centerX - piece.sizeX / 2 : piece.centerX + piece.sizeX / 2;
+    const offsetX = piece.hinge === "left" ? piece.sizeX / 2 : -piece.sizeX / 2;
+    const groupPosition: [number, number, number] = [hingeX, piece.centerY, piece.centerZ];
+    return (
+      <>
+        <group position={groupPosition} rotation={[0, piece.openRotationY, 0]}>
+          <mesh position={[offsetX, 0, 0]} {...clickHandlers}>
             <boxGeometry args={[piece.sizeX, piece.sizeY, piece.sizeZ]} />
             <meshStandardMaterial color={color} transparent opacity={isSelected ? 0.55 : 0.28} />
             <Edges color={color} />
           </mesh>
           {piece.handle && (
-            <mesh position={[0, offsetY + (piece.hinge === "up" ? -piece.sizeY * 0.35 : piece.sizeY * 0.35), piece.sizeZ]}>
+            <mesh position={[offsetX + (piece.hinge === "left" ? piece.sizeX * 0.35 : -piece.sizeX * 0.35), 0, piece.sizeZ]}>
               <sphereGeometry args={[0.012, 8, 8]} />
               <meshStandardMaterial color={color} />
             </mesh>
           )}
         </group>
-      );
-    }
-    const hingeX = piece.hinge === "left" ? piece.centerX - piece.sizeX / 2 : piece.centerX + piece.sizeX / 2;
-    const offsetX = piece.hinge === "left" ? piece.sizeX / 2 : -piece.sizeX / 2;
-    return (
-      <group position={[hingeX, piece.centerY, piece.centerZ]} rotation={[0, piece.openRotationY, 0]}>
-        <mesh position={[offsetX, 0, 0]} {...clickHandlers}>
-          <boxGeometry args={[piece.sizeX, piece.sizeY, piece.sizeZ]} />
-          <meshStandardMaterial color={color} transparent opacity={isSelected ? 0.55 : 0.28} />
-          <Edges color={color} />
-        </mesh>
-        {piece.handle && (
-          <mesh position={[offsetX + (piece.hinge === "left" ? piece.sizeX * 0.35 : -piece.sizeX * 0.35), 0, piece.sizeZ]}>
-            <sphereGeometry args={[0.012, 8, 8]} />
-            <meshStandardMaterial color={color} />
-          </mesh>
-        )}
-      </group>
+        <PieceIdLabel position={groupPosition} text={piece.cutlistId} />
+      </>
     );
   }
 
   const { position } = getTransform(piece, mode);
   return (
-    <mesh position={position} {...clickHandlers}>
-      <boxGeometry args={[Math.max(piece.sizeX, 0.004), Math.max(piece.sizeY, 0.004), Math.max(piece.sizeZ, 0.004)]} />
-      <meshStandardMaterial color={color} transparent opacity={isSelected ? 0.55 : 0.22} />
-      <Edges color={color} />
-      {piece.handle && (
-        <mesh position={[0, 0, piece.sizeZ / 2]}>
-          <sphereGeometry args={[0.01, 8, 8]} />
-          <meshStandardMaterial color={color} />
-        </mesh>
-      )}
-    </mesh>
+    <>
+      <mesh position={position} {...clickHandlers}>
+        <boxGeometry args={[Math.max(piece.sizeX, 0.004), Math.max(piece.sizeY, 0.004), Math.max(piece.sizeZ, 0.004)]} />
+        <meshStandardMaterial color={color} transparent opacity={isSelected ? 0.55 : 0.22} />
+        <Edges color={color} />
+        {piece.handle && (
+          <mesh position={[0, 0, piece.sizeZ / 2]}>
+            <sphereGeometry args={[0.01, 8, 8]} />
+            <meshStandardMaterial color={color} />
+          </mesh>
+        )}
+      </mesh>
+      <PieceIdLabel position={position} text={piece.cutlistId} />
+    </>
   );
 }
 

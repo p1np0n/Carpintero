@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computePanels } from "../panels";
+import { computePanels, isFrontVisiblePanel } from "../panels";
 import { DEFAULT_GLOBAL_PARAMS, type Design } from "../types";
 
 function designWithModules(modules: Design["columns"][number]["modules"]): Design {
@@ -94,5 +94,27 @@ describe("computePanels", () => {
 
     expect(moulding.sizeY).toBeCloseTo(0.1, 5);
     expect(moulding.centerY).toBeCloseTo(0.05, 5); // centered within its 0 to 0.1 slot
+  });
+
+  it("a drawer module's front-facing cutlist labels skip its hidden back/side/bottom boards", () => {
+    const design = designWithModules([{ id: "m1", type: "drawer", heightM: 0.3 }]);
+    const panels = computePanels(design);
+    const visible = panels.filter(isFrontVisiblePanel);
+
+    expect(visible.some((p) => p.role === "back-panel")).toBe(false);
+    expect(visible.some((p) => p.role === "drawer-back")).toBe(false);
+    expect(visible.some((p) => p.role === "drawer-side")).toBe(false);
+    expect(visible.some((p) => p.role === "drawer-bottom")).toBe(false);
+    expect(visible.some((p) => p.role === "drawer-front")).toBe(true);
+    expect(visible.some((p) => p.role === "side-panel")).toBe(true);
+  });
+
+  it("keeps the hanging rod itself visible but hides its mounting brackets", () => {
+    const design = designWithModules([{ id: "m1", type: "hanging-rod", heightM: 0.1 }]);
+    const panels = computePanels(design);
+    const visible = panels.filter(isFrontVisiblePanel);
+
+    expect(visible.some((p) => p.role === "hanging-rod" && p.orientation === "rod")).toBe(true);
+    expect(visible.some((p) => p.role === "hanging-rod" && p.orientation === "hardware")).toBe(false);
   });
 });

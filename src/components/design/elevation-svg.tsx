@@ -1,9 +1,34 @@
 import * as React from "react";
+import { computeDesignMemoized, isFrontVisiblePanel, pieceIdToCutlistId } from "@/lib/design-engine/compute";
 import { computeLayout2D, type ModuleRect } from "@/lib/design-engine/layout2d";
 import type { Design, FullDoorConfig } from "@/lib/design-engine/types";
 
 const GRAPHITE = "#3f3f46";
 const GRAPHITE_SOFT = "#3f3f4633";
+const ID_LABEL_COLOR = "#2563eb";
+
+/** Cutlist ID tag for one piece, placed at its own center in the elevation's absolute
+ * design-space coordinates — a white outline keeps it legible over any stroke or fill
+ * underneath, regardless of what module decoration it lands on. */
+function PieceIdLabel({ x, y, text }: { x: number; y: number; text: string }) {
+  return (
+    <text
+      x={x}
+      y={y}
+      fontSize={11}
+      fontWeight={700}
+      fill={ID_LABEL_COLOR}
+      stroke="white"
+      strokeWidth={3}
+      paintOrder="stroke"
+      textAnchor="middle"
+      dominantBaseline="middle"
+      style={{ pointerEvents: "none" }}
+    >
+      {text}
+    </text>
+  );
+}
 
 function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => number }) {
   const w = mm(rect.width);
@@ -184,6 +209,13 @@ export function ElevationSvg({ design, selectedModuleId, onSelectModule, classNa
   const totalH = mm(layout.heightM) || 1;
   const pad = Math.max(20, Math.round(Math.max(totalW, totalH) * 0.04));
 
+  // Panel centers use the same absolute design-space coordinates as the layout above
+  // (column x offsets, mount-height-relative y), so their cutlist ID labels can be drawn
+  // directly in the outer <svg> frame without re-deriving each piece's own position.
+  const { panels, cutlist } = computeDesignMemoized(design);
+  const cutlistIdByPieceId = React.useMemo(() => pieceIdToCutlistId(cutlist), [cutlist]);
+  const visiblePanels = React.useMemo(() => panels.filter(isFrontVisiblePanel), [panels]);
+
   return (
     <svg
       viewBox={`${-pad} ${-pad} ${totalW + pad * 2} ${totalH + pad * 2}`}
@@ -252,6 +284,14 @@ export function ElevationSvg({ design, selectedModuleId, onSelectModule, classNa
             />
           )}
         </g>
+      ))}
+      {visiblePanels.map((p) => (
+        <PieceIdLabel
+          key={p.id}
+          x={mm(p.centerX)}
+          y={totalH - mm(p.centerY)}
+          text={cutlistIdByPieceId.get(p.id) ?? "?"}
+        />
       ))}
     </svg>
   );

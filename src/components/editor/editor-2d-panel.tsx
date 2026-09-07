@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDesignStore } from "@/store/design-store";
 import { MODULE_TYPE_LABELS } from "@/lib/design-engine/labels";
+import { computeDesignMemoized, pieceIdToCutlistId } from "@/lib/design-engine/compute";
 import { computeLayout2D, type ColumnLayout, type ModuleRect } from "@/lib/design-engine/layout2d";
 import type { FullDoorConfig } from "@/lib/design-engine/types";
 
@@ -25,6 +26,27 @@ export function Editor2DPanel() {
   const design = useDesignStore((s) => s.design);
   const addColumn = useDesignStore((s) => s.addColumn);
   const layout = React.useMemo(() => computeLayout2D(design), [design]);
+
+  // Groups every piece's cutlist ID (E1, S2, D3…) by the module it belongs to, so each
+  // module box can show which cutlist rows it's made of — the same IDs used in the
+  // cutlist table and the 3D view, letting you match a board across all three.
+  const cutlistIdsByModuleId = React.useMemo(() => {
+    const { panels, cutlist } = computeDesignMemoized(design);
+    const idByPieceId = pieceIdToCutlistId(cutlist);
+    const map = new Map<string, string[]>();
+    for (const p of panels) {
+      const id = idByPieceId.get(p.id);
+      if (!id) continue;
+      const ids = map.get(p.moduleId);
+      if (ids) {
+        if (!ids.includes(id)) ids.push(id);
+      } else {
+        map.set(p.moduleId, [id]);
+      }
+    }
+    for (const ids of map.values()) ids.sort();
+    return map;
+  }, [design]);
 
   const totalWidthPx =
     layout.columns.reduce((sum, c) => sum + Math.max(c.width * PX_PER_M, 80), 0) +
@@ -47,7 +69,11 @@ export function Editor2DPanel() {
             {/* Row 1: module stacks + each column's own width gauge, floor-aligned. */}
             <div className="flex items-end" style={{ gap: COLUMN_GAP_PX }}>
               {layout.columns.map((columnLayout) => (
-                <ColumnEditorTop key={columnLayout.column.id} columnLayout={columnLayout} />
+                <ColumnEditorTop
+                  key={columnLayout.column.id}
+                  columnLayout={columnLayout}
+                  cutlistIdsByModuleId={cutlistIdsByModuleId}
+                />
               ))}
               <AddColumnSlotTop heightM={layout.heightM} onAdd={() => addColumn("end")} />
             </div>
@@ -224,7 +250,13 @@ function FullDoorControl({ columnId, fullDoor }: { columnId: string; fullDoor: F
 /** Top half of a column: add-module button, module stack + height gauge, width gauge.
  * If the column is mounted above the floor, an empty gap of that height is drawn below
  * the stack (inside the same floor-aligned box) so it visually "hangs" like a wall unit. */
-function ColumnEditorTop({ columnLayout }: { columnLayout: ColumnLayout }) {
+function ColumnEditorTop({
+  columnLayout,
+  cutlistIdsByModuleId,
+}: {
+  columnLayout: ColumnLayout;
+  cutlistIdsByModuleId: Map<string, string[]>;
+}) {
   const column = columnLayout.column;
   const addModule = useDesignStore((s) => s.addModule);
 
@@ -253,7 +285,12 @@ function ColumnEditorTop({ columnLayout }: { columnLayout: ColumnLayout }) {
             style={{ width: widthPx, height: stackHeightPx }}
           >
             {columnLayout.modules.map((rect) => (
-              <ModuleBox key={rect.module.id} columnId={column.id} rect={rect} />
+              <ModuleBox
+                key={rect.module.id}
+                columnId={column.id}
+                rect={rect}
+                cutlistIds={cutlistIdsByModuleId.get(rect.module.id) ?? []}
+              />
             ))}
             {isEmpty && (
               <div className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 text-center text-[10px] text-muted-foreground">
@@ -371,7 +408,15 @@ function ColumnEditorBottom({
   );
 }
 
-function ModuleBox({ columnId, rect }: { columnId: string; rect: ModuleRect }) {
+function ModuleBox({
+  columnId,
+  rect,
+  cutlistIds,
+}: {
+  columnId: string;
+  rect: ModuleRect;
+  cutlistIds: string[];
+}) {
   const moduleId = rect.module.id;
   const isSelected = useDesignStore((s) => s.selectedModuleId === moduleId);
   const select = useDesignStore((s) => s.select);
@@ -389,6 +434,17 @@ function ModuleBox({ columnId, rect }: { columnId: string; rect: ModuleRect }) {
         isSelected && "border-2 border-primary bg-primary text-primary-foreground hover:bg-primary"
       )}
     >
+      {cutlistIds.length > 0 && (
+        <span
+          className={cn(
+            "absolute right-1 top-1 max-w-[80%] truncate rounded px-1 py-0.5 font-mono text-[9px] font-semibold leading-none",
+            isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"
+          )}
+          title={`Piezas del listado de corte: ${cutlistIds.join(", ")}`}
+        >
+          {cutlistIds.join(", ")}
+        </span>
+      )}
       {Array.from({ length: rect.module.verticalDividers ?? 0 }).map((_, i, arr) => (
         <div
           key={i}
