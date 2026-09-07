@@ -96,6 +96,46 @@ function genVerticalDividerPieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
   return pieces;
 }
 
+/** Horizontal shelf boards splitting a module's own compartment into equal-height,
+ * stacked sections — same idea as the vertical dividers above but along the module's
+ * height instead of its width, e.g. adding internal shelves inside a "doors" module. */
+function genHorizontalDividerPieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
+  const count = mod.horizontalDividers ?? 0;
+  if (count <= 0) return [];
+
+  const { column, columnX0, globalParams, yBottom } = ctx;
+  const { depthM, thicknessMm } = globalParams;
+  const thicknessM = thicknessMm / 1000;
+  const W = column.widthM;
+  const innerWidth = round(W - 2 * thicknessM);
+  const centerXCol = columnX0 + W / 2;
+  const moduleHeight = mod.heightM;
+  const sectionHeight = moduleHeight / (count + 1);
+
+  const pieces: PanelPiece[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const boundaryY = yBottom + sectionHeight * (i + 1);
+    pieces.push({
+      id: `${mod.id}-hdivider-${i}-${Math.random().toString(36).slice(2, 8)}`,
+      moduleId: mod.id,
+      columnId: column.id,
+      role: "shelf",
+      orientation: "horizontal-xz",
+      widthM: innerWidth,
+      heightM: depthM,
+      thicknessMm,
+      isHardware: false,
+      centerX: centerXCol,
+      centerY: boundaryY - thicknessM / 2,
+      centerZ: depthM / 2,
+      sizeX: innerWidth,
+      sizeY: thicknessM,
+      sizeZ: depthM,
+    });
+  }
+  return pieces;
+}
+
 function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
   const { column, columnX0, globalParams, yBottom } = ctx;
   const { depthM, thicknessMm, overhangMm } = globalParams;
@@ -422,7 +462,7 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
     }
   })();
 
-  return [...typePieces, ...genVerticalDividerPieces(mod, ctx)];
+  return [...typePieces, ...genVerticalDividerPieces(mod, ctx), ...genHorizontalDividerPieces(mod, ctx)];
 }
 
 /** A door (or pair of doors) covering a column's full height, regardless of how many

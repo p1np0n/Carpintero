@@ -150,20 +150,37 @@ export function ModulePropertiesPanel() {
       )}
 
       {(mod.type === "shelf" || mod.type === "open" || mod.type === "doors" || mod.type === "left-door" || mod.type === "right-door") && (
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Divisores verticales</Label>
-          <Input
-            type="number"
-            min={0}
-            max={3}
-            title="Agrega tabiques verticales que dividen este módulo en secciones lado a lado, manteniendo el mismo ancho total"
-            value={mod.verticalDividers ?? 0}
-            onChange={(e) =>
-              updateModuleProps(column.id, mod.id, { verticalDividers: Math.max(0, Number(e.target.value)) })
-            }
-            className="h-8 w-20"
-          />
-        </div>
+        <>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Divisores verticales</Label>
+            <Input
+              type="number"
+              min={0}
+              max={3}
+              title="Agrega tabiques verticales que dividen este módulo en secciones lado a lado, manteniendo el mismo ancho total"
+              value={mod.verticalDividers ?? 0}
+              onChange={(e) =>
+                updateModuleProps(column.id, mod.id, { verticalDividers: Math.max(0, Number(e.target.value)) })
+              }
+              className="h-8 w-20"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Divisores horizontales</Label>
+            <Input
+              type="number"
+              min={0}
+              max={3}
+              title="Agrega estantes horizontales que dividen este módulo en secciones apiladas, manteniendo la misma altura total"
+              value={mod.horizontalDividers ?? 0}
+              onChange={(e) =>
+                updateModuleProps(column.id, mod.id, { horizontalDividers: Math.max(0, Number(e.target.value)) })
+              }
+              className="h-8 w-20"
+            />
+          </div>
+        </>
       )}
 
       <Button

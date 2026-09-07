@@ -396,6 +396,13 @@ function ModuleBox({ columnId, rect }: { columnId: string; rect: ModuleRect }) {
           style={{ left: `${((i + 1) / (arr.length + 1)) * 100}%` }}
         />
       ))}
+      {Array.from({ length: rect.module.horizontalDividers ?? 0 }).map((_, i, arr) => (
+        <div
+          key={i}
+          className={cn("pointer-events-none absolute inset-x-0 h-px", isSelected ? "bg-primary-foreground/70" : "bg-foreground/50")}
+          style={{ top: `${((i + 1) / (arr.length + 1)) * 100}%` }}
+        />
+      ))}
       <span className="text-[13px] font-semibold">{MODULE_TYPE_LABELS[rect.module.type]}</span>
       {showDetail && (
         <span

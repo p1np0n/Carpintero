@@ -57,6 +57,10 @@ export interface Module {
   /** Number of vertical divider panels splitting this module's own compartment into
    * that many + 1 equal-width side-by-side sections (e.g. 1 divider = 2 sections). */
   verticalDividers?: number;
+
+  /** Number of horizontal shelf boards splitting this module's own compartment into
+   * that many + 1 equal-height stacked sections (e.g. 1 divider = 2 sections). */
+  horizontalDividers?: number;
 }
 
 /** A single door (or pair of doors) covering the column's full height, in front of
