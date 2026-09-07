@@ -32,7 +32,7 @@ export async function ensureSeedMaterials() {
     .select("id", { count: "exact", head: true })
     .is("owner_id", null);
   if ((count ?? 0) > 0) return;
-  await supabase.from("carpintero_materials").insert(
+  const { error } = await supabase.from("carpintero_materials").insert(
     SEED_MATERIALS.map((m) => ({
       owner_id: null,
       name: m.name,
@@ -45,6 +45,7 @@ export async function ensureSeedMaterials() {
       currency: m.currency,
     }))
   );
+  if (error) throw new Error(error.message);
 }
 
 export async function createMaterial(input: {

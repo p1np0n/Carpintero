@@ -125,8 +125,10 @@ create policy "carpintero_materials_global_select" on public.carpintero_material
 create policy "carpintero_materials_owner_select" on public.carpintero_materials
   for select using (auth.uid() = owner_id);
 
+-- also allows inserting owner_id IS NULL rows, since ensureSeedMaterials() (any
+-- authenticated client) is what seeds the shared global catalog the first time.
 create policy "carpintero_materials_owner_insert" on public.carpintero_materials
-  for insert with check (auth.uid() = owner_id);
+  for insert with check (auth.uid() = owner_id or owner_id is null);
 
 create policy "carpintero_materials_owner_update" on public.carpintero_materials
   for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
