@@ -60,7 +60,7 @@ create table public.carpintero_project_materials (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.carpintero_projects(id) on delete cascade,
   material_id uuid not null references public.carpintero_materials(id) on delete restrict,
-  scope text not null default 'project' check (scope in ('project', 'column', 'module')),
+  scope text not null default 'project' check (scope in ('project', 'column', 'module', 'back-panel')),
   target_id text,
   created_at timestamptz not null default now(),
   unique (project_id, scope, target_id)

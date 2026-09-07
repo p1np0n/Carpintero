@@ -73,6 +73,37 @@ export async function createMaterial(input: {
   revalidatePath("/materiales");
 }
 
+export async function updateMaterial(
+  materialId: string,
+  input: {
+    name: string;
+    type: string;
+    thicknessMm: number;
+    pricePerSqm?: number;
+    pricePerSheet?: number;
+    sheetWidthM: number;
+    sheetHeightM: number;
+    currency: string;
+  }
+) {
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("carpintero_materials")
+    .update({
+      name: input.name,
+      type: input.type,
+      thickness_mm: input.thicknessMm,
+      price_per_sqm: input.pricePerSqm ?? null,
+      price_per_sheet: input.pricePerSheet ?? null,
+      sheet_width_m: input.sheetWidthM,
+      sheet_height_m: input.sheetHeightM,
+      currency: input.currency,
+    })
+    .eq("id", materialId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/materiales");
+}
+
 export async function deleteMaterial(materialId: string) {
   const { supabase } = await requireUser();
   const { error } = await supabase.from("carpintero_materials").delete().eq("id", materialId);
@@ -92,7 +123,7 @@ export async function listAssignments(projectId: string) {
 
 export async function setMaterialAssignment(
   projectId: string,
-  scope: "project" | "column" | "module",
+  scope: "project" | "column" | "module" | "back-panel",
   materialId: string,
   targetId?: string
 ) {

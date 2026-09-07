@@ -1,6 +1,6 @@
 import type { PanelPiece } from "./panels";
 import type { Material, MaterialAssignment } from "./materials";
-import { pricePerSqm, resolveMaterialId } from "./materials";
+import { pricePerSqm, resolveBackMaterialId, resolveMaterialId } from "./materials";
 import { pieceIdToCutlistId } from "./geometry3d";
 import type { CutlistRow } from "./cutlist";
 
@@ -40,7 +40,12 @@ export function computeBudget(
   for (const p of panels) {
     if (p.isHardware) continue;
     const cutlistId = cutlistIdByPieceId.get(p.id) ?? "?";
-    const materialId = resolveMaterialId(assignments, p.moduleId, p.columnId) ?? null;
+    // Back panels are always billed against the dedicated back-panel material (a thinner,
+    // cheaper sheet like Durolac) instead of whatever front-facing material the column or
+    // module resolves to, so the front's material choice never leaks into the back's cost.
+    const materialId =
+      (p.role === "back-panel" ? resolveBackMaterialId(assignments) : resolveMaterialId(assignments, p.moduleId, p.columnId)) ??
+      null;
     const material = materialId ? materialById.get(materialId) : undefined;
     const unitPrice = material ? pricePerSqm(material) : 0;
     const areaSqm = p.widthM * p.heightM;

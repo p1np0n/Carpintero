@@ -12,6 +12,7 @@ import type { Material, MaterialAssignment } from "@/lib/design-engine/materials
 import { ensureSeedMaterials, listAssignments, listMaterials, setMaterialAssignment } from "@/app/actions/materials";
 import { useDesignStore } from "@/store/design-store";
 import { formatCurrency } from "@/lib/format";
+import { MODULE_TYPE_LABELS } from "@/lib/design-engine/labels";
 
 export function MaterialsSection({
   projectId,
@@ -65,13 +66,14 @@ export function MaterialsSection({
     load();
   }, [load]);
 
-  async function assign(scope: "project" | "column", materialId: string, targetId?: string) {
+  async function assign(scope: "project" | "column" | "module" | "back-panel", materialId: string, targetId?: string) {
     await setMaterialAssignment(projectId, scope, materialId, targetId);
     await load();
   }
 
   const budget = computeBudget(panels, cutlist, materials, assignments, { extraCost, currency });
   const projectMaterialId = assignments.find((a) => a.scope === "project")?.materialId ?? "";
+  const backMaterialId = assignments.find((a) => a.scope === "back-panel")?.materialId ?? "";
 
   return (
     <Card>
@@ -79,7 +81,7 @@ export function MaterialsSection({
         <CardTitle className="text-base">Materiales y presupuesto</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Material por defecto del proyecto</Label>
             <Select
@@ -89,6 +91,27 @@ export function MaterialsSection({
             >
               <SelectTrigger className="h-8">
                 <SelectValue placeholder="Selecciona un material" />
+              </SelectTrigger>
+              <SelectContent>
+                {materials.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground" title="Los paneles traseros siempre usan este material, sin importar el material asignado al frente de esa columna o módulo">
+              Material de fondo (siempre distinto)
+            </Label>
+            <Select
+              value={backMaterialId}
+              onValueChange={(v) => assign("back-panel", v)}
+              disabled={loading || materials.length === 0}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Sin asignar" />
               </SelectTrigger>
               <SelectContent>
                 {materials.map((m) => (
@@ -135,6 +158,40 @@ export function MaterialsSection({
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {columns.some((c) => c.modules.length > 0) && (
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground" title="Elige un material solo para este módulo — anula la columna y el proyecto para esa parte del mueble">
+              Material por módulo (opcional, para una sola parte)
+            </Label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {columns.map((c, ci) =>
+                c.modules.map((m, mi) => {
+                  const modMaterialId = assignments.find((a) => a.scope === "module" && a.targetId === m.id)?.materialId ?? "";
+                  return (
+                    <div key={m.id} className="flex items-center gap-2">
+                      <span className="w-32 shrink-0 truncate text-xs text-muted-foreground" title={`Columna ${ci + 1} · ${MODULE_TYPE_LABELS[m.type]} (#${mi + 1})`}>
+                        Col. {ci + 1} · {MODULE_TYPE_LABELS[m.type]}
+                      </span>
+                      <Select value={modMaterialId} onValueChange={(v) => assign("module", v, m.id)} disabled={loading}>
+                        <SelectTrigger className="h-8 flex-1">
+                          <SelectValue placeholder="Usar el de la columna" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {materials.map((mat) => (
+                            <SelectItem key={mat.id} value={mat.id}>
+                              {mat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}
