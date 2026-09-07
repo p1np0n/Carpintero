@@ -109,6 +109,23 @@ describe("computePanels", () => {
     expect(visible.some((p) => p.role === "side-panel")).toBe(true);
   });
 
+  it("a doors module's two leaves together span the column's full width, flush with both edges", () => {
+    const design = designWithModules([{ id: "m1", type: "doors", heightM: 0.4 }]);
+    const panels = computePanels(design);
+    const doors = panels.filter((p) => p.role === "door-front");
+
+    expect(doors).toHaveLength(2);
+    expect(doors[0].widthM + doors[1].widthM).toBeCloseTo(0.6, 5);
+  });
+
+  it("a left-door/right-door module's door is exactly as wide as the column", () => {
+    const design = designWithModules([{ id: "m1", type: "left-door", heightM: 0.4 }]);
+    const panels = computePanels(design);
+    const door = panels.find((p) => p.role === "door-front")!;
+
+    expect(door.widthM).toBeCloseTo(0.6, 5);
+  });
+
   it("keeps the hanging rod itself visible but hides its mounting brackets", () => {
     const design = designWithModules([{ id: "m1", type: "hanging-rod", heightM: 0.1 }]);
     const panels = computePanels(design);

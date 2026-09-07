@@ -55,6 +55,22 @@ describe("column fullDoor", () => {
     expect(doorRows.reduce((sum, r) => sum + r.qty, 0)).toBe(1);
   });
 
+  it("a single-hinge full door is exactly as wide as the column, flush with both outer edges", () => {
+    const design = designWithFullDoor("left");
+    const panels = computePanels(design);
+    const door = panels.find((p) => p.moduleId === "__fulldoor__")!;
+
+    expect(door.widthM).toBeCloseTo(0.6, 5);
+  });
+
+  it("a double-hinge full door's two leaves together span the column's full width", () => {
+    const design = designWithFullDoor("double");
+    const panels = computePanels(design);
+    const doors = panels.filter((p) => p.moduleId === "__fulldoor__");
+
+    expect(doors[0].widthM + doors[1].widthM).toBeCloseTo(0.6, 5);
+  });
+
   it("a column without fullDoor generates no __fulldoor__ pieces", () => {
     const design: Design = {
       globalParams: { ...DEFAULT_GLOBAL_PARAMS },

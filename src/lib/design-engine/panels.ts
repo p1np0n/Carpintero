@@ -288,7 +288,11 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
     }
 
     case "doors": {
-      const doorWidth = round((innerWidth + overhangM) / 2);
+      // Full-width coverage: each leaf spans half the column's outer width, so the pair
+      // sits flush with both outer edges instead of leaving the (2×thickness − overhang)
+      // reveal that "innerWidth + overhang" left when overhang was smaller than the two
+      // side panels it was meant to cover.
+      const doorWidth = round(W / 2);
       const doorHeight = round(moduleHeight + overhangM);
       const centerY = yBottom + moduleHeight / 2;
       const centerZ = depthM + thicknessM / 2;
@@ -330,7 +334,8 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
 
     case "left-door":
     case "right-door": {
-      const doorWidth = round(innerWidth + overhangM);
+      // Full-width coverage: flush with both outer edges of the column (see "doors" above).
+      const doorWidth = round(W);
       const doorHeight = round(moduleHeight + overhangM);
       return [
         piece({
@@ -475,7 +480,6 @@ function genFullDoorPieces(column: Column, columnX0: number, globalParams: Globa
   const thicknessM = thicknessMm / 1000;
   const overhangM = overhangMm / 1000;
   const W = column.widthM;
-  const innerWidth = round(W - 2 * thicknessM);
   const centerZ = depthM + thicknessM / 2;
   const doorHeight = round(H + overhangM);
   const mountY = column.mountHeightM ?? 0;
@@ -489,7 +493,9 @@ function genFullDoorPieces(column: Column, columnX0: number, globalParams: Globa
   });
 
   if (config.hinge === "double") {
-    const doorWidth = round((innerWidth + overhangM) / 2);
+    // Full-width coverage: each leaf spans half the column's outer width (see "doors" in
+    // genModulePieces above for why innerWidth + overhang used to leave an edge reveal).
+    const doorWidth = round(W / 2);
     return [
       piece({
         role: "door-front",
@@ -526,7 +532,8 @@ function genFullDoorPieces(column: Column, columnX0: number, globalParams: Globa
     ];
   }
 
-  const doorWidth = round(innerWidth + overhangM);
+  // Full-width coverage: flush with both outer edges of the column.
+  const doorWidth = round(W);
   return [
     piece({
       role: "door-front",
