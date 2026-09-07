@@ -17,7 +17,7 @@ function row(overrides: Partial<CutlistRow>): CutlistRow {
   };
 }
 
-describe("packSheets (first-fit-decreasing)", () => {
+describe("packSheets (guillotine best-short-side-fit)", () => {
   it("packs pieces that clearly fit into a single 1.83x2.44 sheet", () => {
     const rows = [row({ cutlistId: "A1", widthM: 0.5, heightM: 0.4, qty: 4 })];
     const result = packSheets(rows, { widthM: 1.83, heightM: 2.44 });
@@ -52,5 +52,45 @@ describe("packSheets (first-fit-decreasing)", () => {
     const result = packSheets(rows, { widthM: 1.83, heightM: 2.44 });
     expect(result.wastePct).toBeGreaterThanOrEqual(0);
     expect(result.wastePct).toBeLessThanOrEqual(100);
+  });
+
+  it("never places two pieces overlapping on the same sheet", () => {
+    const rows = [
+      row({ cutlistId: "A", widthM: 0.7, heightM: 0.5, qty: 3 }),
+      row({ cutlistId: "B", widthM: 0.4, heightM: 0.9, qty: 2 }),
+      row({ cutlistId: "C", widthM: 0.3, heightM: 0.3, qty: 6 }),
+    ];
+    const result = packSheets(rows, { widthM: 1.83, heightM: 2.44 });
+
+    for (let s = 0; s < result.sheetCount; s += 1) {
+      const onSheet = result.placements.filter((p) => p.sheetIndex === s);
+      for (let i = 0; i < onSheet.length; i += 1) {
+        for (let j = i + 1; j < onSheet.length; j += 1) {
+          const a = onSheet[i];
+          const b = onSheet[j];
+          const overlapsX = a.x < b.x + b.width - 1e-6 && b.x < a.x + a.width - 1e-6;
+          const overlapsY = a.y < b.y + b.height - 1e-6 && b.y < a.y + a.height - 1e-6;
+          expect(overlapsX && overlapsY).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("reaches the mathematical minimum sheet count and waste (bounded by rounding up to whole sheets), not just whatever a single fixed heuristic happens to find", () => {
+    const rows = [
+      row({ cutlistId: "A", widthM: 0.9, heightM: 1.0, qty: 3 }),
+      row({ cutlistId: "B", widthM: 0.6, heightM: 1.5, qty: 2 }),
+    ];
+    const sheet = { widthM: 1.83, heightM: 2.44 };
+    const result = packSheets(rows, sheet);
+
+    const totalAreaSqm = 0.9 * 1.0 * 3 + 0.6 * 1.5 * 2;
+    const sheetAreaSqm = sheet.widthM * sheet.heightM;
+    const minSheets = Math.ceil(totalAreaSqm / sheetAreaSqm);
+    const floorWastePct = 100 * (1 - totalAreaSqm / (minSheets * sheetAreaSqm));
+
+    expect(result.sheetCount).toBe(minSheets);
+    expect(result.unplaced).toHaveLength(0);
+    expect(result.wastePct).toBeCloseTo(floorWastePct, 1);
   });
 });
