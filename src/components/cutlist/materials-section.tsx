@@ -36,26 +36,36 @@ export function MaterialsSection({
     try {
       await ensureSeedMaterials();
       const [mats, rows] = await Promise.all([listMaterials(), listAssignments(projectId)]);
-      setMaterials(
-        mats.map((m) => ({
-          id: m.id,
-          name: m.name,
-          type: m.type,
-          thicknessMm: m.thickness_mm,
-          pricePerSqm: m.price_per_sqm,
-          pricePerSheet: m.price_per_sheet,
-          sheetWidthM: m.sheet_width_m,
-          sheetHeightM: m.sheet_height_m,
-          currency: m.currency,
-        }))
-      );
-      setAssignments(
-        rows.map((r) => ({
-          scope: r.scope as MaterialAssignment["scope"],
-          targetId: r.target_id ?? undefined,
-          materialId: r.material_id,
-        }))
-      );
+      const loadedMaterials: Material[] = mats.map((m) => ({
+        id: m.id,
+        name: m.name,
+        type: m.type,
+        thicknessMm: m.thickness_mm,
+        pricePerSqm: m.price_per_sqm,
+        pricePerSheet: m.price_per_sheet,
+        sheetWidthM: m.sheet_width_m,
+        sheetHeightM: m.sheet_height_m,
+        currency: m.currency,
+      }));
+      let loadedAssignments: MaterialAssignment[] = rows.map((r) => ({
+        scope: r.scope as MaterialAssignment["scope"],
+        targetId: r.target_id ?? undefined,
+        materialId: r.material_id,
+      }));
+
+      // A project with no material chosen yet defaults to Melamina blanca 15mm instead of
+      // staying unassigned (0 cost) until someone picks one from the dropdown.
+      const hasProjectMaterial = loadedAssignments.some((a) => a.scope === "project");
+      if (!hasProjectMaterial) {
+        const defaultMaterial = loadedMaterials.find((m) => m.name === "Melamina blanca 15mm");
+        if (defaultMaterial) {
+          await setMaterialAssignment(projectId, "project", defaultMaterial.id);
+          loadedAssignments = [...loadedAssignments, { scope: "project", materialId: defaultMaterial.id }];
+        }
+      }
+
+      setMaterials(loadedMaterials);
+      setAssignments(loadedAssignments);
     } finally {
       setLoading(false);
     }
