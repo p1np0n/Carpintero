@@ -52,6 +52,34 @@ describe("computePanels", () => {
     expect(panels.filter((p) => p.role === "drawer-bottom")).toHaveLength(1);
   });
 
+  it("leaves 13mm per side (26mm total) between the drawer box and the cabinet's inner walls for the slides", () => {
+    const design = designWithModules([{ id: "m1", type: "drawer", heightM: 0.25 }]);
+    const panels = computePanels(design);
+    const [leftSide, rightSide] = panels.filter((p) => p.role === "drawer-side");
+    const thicknessM = DEFAULT_GLOBAL_PARAMS.thicknessMm / 1000;
+
+    const leftGap = leftSide.centerX - leftSide.sizeX / 2 - thicknessM;
+    const rightGap = 0.6 - thicknessM - (rightSide.centerX + rightSide.sizeX / 2);
+    expect(leftGap * 1000).toBeCloseTo(13, 1);
+    expect(rightGap * 1000).toBeCloseTo(13, 1);
+  });
+
+  it("a wider drawerSlideClearanceMm shrinks the drawer box and its back/bottom width to match", () => {
+    const narrow: Design = {
+      globalParams: { ...DEFAULT_GLOBAL_PARAMS, drawerSlideClearanceMm: 26 },
+      columns: [{ id: "c1", widthM: 0.6, modules: [{ id: "m1", type: "drawer", heightM: 0.25 }] }],
+    };
+    const wide: Design = {
+      globalParams: { ...DEFAULT_GLOBAL_PARAMS, drawerSlideClearanceMm: 40 },
+      columns: [{ id: "c1", widthM: 0.6, modules: [{ id: "m1", type: "drawer", heightM: 0.25 }] }],
+    };
+
+    const narrowBack = computePanels(narrow).find((p) => p.role === "drawer-back")!;
+    const wideBack = computePanels(wide).find((p) => p.role === "drawer-back")!;
+    expect(wideBack.widthM).toBeLessThan(narrowBack.widthM);
+    expect(narrowBack.widthM - wideBack.widthM).toBeCloseTo(0.014, 3); // (40-26)mm extra clearance
+  });
+
   it("left-door and right-door produce a single door-front with the matching hinge", () => {
     const design = designWithModules([{ id: "m1", type: "left-door", heightM: 0.5 }]);
     const panels = computePanels(design);

@@ -138,7 +138,7 @@ function genHorizontalDividerPieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
 
 function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
   const { column, columnX0, globalParams, yBottom } = ctx;
-  const { depthM, thicknessMm, overhangMm } = globalParams;
+  const { depthM, thicknessMm, overhangMm, drawerSlideClearanceMm } = globalParams;
   const thicknessM = thicknessMm / 1000;
   const overhangM = overhangMm / 1000;
   const W = column.widthM;
@@ -361,10 +361,18 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
       const frontHeight = round(Math.max(0.01, moduleHeight - 0.004));
       const boxHeight = round(moduleHeight * 0.7);
       const sideWidth = round(Math.max(0.01, innerDepth - 0.05));
-      const backWidth = round(Math.max(0.01, innerWidth - 0.02));
       const bottomDepth = round(Math.max(0.01, innerDepth - 0.05));
       const centerY = yBottom + moduleHeight / 2;
       const boxCenterY = yBottom + boxHeight / 2;
+
+      // Side-mount drawer slides sit between the drawer box and the cabinet's inner
+      // walls, so the box has to be narrower than the raw opening by the slides'
+      // combined width (~13mm per side, 26mm total by default) — not just a token 1cm
+      // gap that left no real room for the hardware once installed.
+      const slideClearanceM = (drawerSlideClearanceMm ?? 26) / 1000;
+      const sideOffset = round(thicknessM + slideClearanceM / 2);
+      const sideCenterInset = round(sideOffset + thicknessM / 2);
+      const backWidth = round(Math.max(0.01, innerWidth - slideClearanceM - 2 * thicknessM));
       return [
         piece({
           role: "drawer-front",
@@ -402,7 +410,7 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
           heightM: boxHeight,
           thicknessMm,
           isHardware: false,
-          centerX: columnX0 + thicknessM + 0.01,
+          centerX: columnX0 + sideCenterInset,
           centerY: boxCenterY,
           centerZ: depthM / 2,
           sizeX: thicknessM,
@@ -416,7 +424,7 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
           heightM: boxHeight,
           thicknessMm,
           isHardware: false,
-          centerX: columnX0 + W - thicknessM - 0.01,
+          centerX: columnX0 + W - sideCenterInset,
           centerY: boxCenterY,
           centerZ: depthM / 2,
           sizeX: thicknessM,

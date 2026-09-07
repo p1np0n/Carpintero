@@ -94,6 +94,10 @@ export interface GlobalParams {
   /** Optional thinner/different thickness for the back panel only (e.g. 3mm hardboard
    * "durolac" or thin plywood behind an 18mm carcass). Falls back to `thicknessMm`. */
   backPanelThicknessMm?: number;
+  /** Total width (both sides combined) a drawer box is shrunk by so its mounted slides
+   * (correderas) have room between the box and the cabinet's inner walls — typical
+   * side-mount ball-bearing slides need about 13mm per side. Falls back to 26mm. */
+  drawerSlideClearanceMm?: number;
 }
 
 export interface Design {
