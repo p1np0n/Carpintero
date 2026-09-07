@@ -80,6 +80,33 @@ describe("computePanels", () => {
     expect(narrowBack.widthM - wideBack.widthM).toBeCloseTo(0.014, 3); // (40-26)mm extra clearance
   });
 
+  it("screws the drawer bottom flush to the underside instead of setting it into a routed groove", () => {
+    const design = designWithModules([{ id: "m1", type: "drawer", heightM: 0.25 }]);
+    const panels = computePanels(design);
+    const bottom = panels.find((p) => p.role === "drawer-bottom")!;
+    const side = panels.find((p) => p.role === "drawer-side")!;
+    const thicknessM = DEFAULT_GLOBAL_PARAMS.thicknessMm / 1000;
+
+    // Full board thickness (not the thin ranurado insert) and flush with the very bottom
+    // of the module slot (yBottom = 0 here), not floating partway up in a groove.
+    expect(bottom.sizeY).toBeCloseTo(thicknessM, 5);
+    expect(bottom.centerY - bottom.sizeY / 2).toBeCloseTo(0, 5);
+
+    // The sides rest directly on top of the bottom panel — no gap, no overlap.
+    const bottomTop = bottom.centerY + bottom.sizeY / 2;
+    const sideBottom = side.centerY - side.sizeY / 2;
+    expect(sideBottom).toBeCloseTo(bottomTop, 5);
+  });
+
+  it("the screwed-on bottom spans the box's full outer footprint, wider than the interior back board", () => {
+    const design = designWithModules([{ id: "m1", type: "drawer", heightM: 0.25 }]);
+    const panels = computePanels(design);
+    const bottom = panels.find((p) => p.role === "drawer-bottom")!;
+    const back = panels.find((p) => p.role === "drawer-back")!;
+
+    expect(bottom.widthM).toBeGreaterThan(back.widthM);
+  });
+
   it("left-door and right-door produce a single door-front with the matching hinge", () => {
     const design = designWithModules([{ id: "m1", type: "left-door", heightM: 0.5 }]);
     const panels = computePanels(design);

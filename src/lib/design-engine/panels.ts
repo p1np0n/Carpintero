@@ -363,7 +363,6 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
       const sideWidth = round(Math.max(0.01, innerDepth - 0.05));
       const bottomDepth = round(Math.max(0.01, innerDepth - 0.05));
       const centerY = yBottom + moduleHeight / 2;
-      const boxCenterY = yBottom + boxHeight / 2;
 
       // Side-mount drawer slides sit between the drawer box and the cabinet's inner
       // walls, so the box has to be narrower than the raw opening by the slides'
@@ -373,6 +372,13 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
       const sideOffset = round(thicknessM + slideClearanceM / 2);
       const sideCenterInset = round(sideOffset + thicknessM / 2);
       const backWidth = round(Math.max(0.01, innerWidth - slideClearanceM - 2 * thicknessM));
+
+      // Screwed-on bottom (not a routed groove): full board thickness for real strength,
+      // spanning the box's whole outer footprint since the sides/back sit directly on top
+      // of its edges instead of slotting partway up into them. The rest of the box is
+      // raised by that thickness so it rests ON the bottom panel rather than overlapping it.
+      const bottomWidth = round(Math.max(0.01, W - 2 * sideOffset));
+      const boxCenterY = yBottom + thicknessM + boxHeight / 2;
       return [
         piece({
           role: "drawer-front",
@@ -434,15 +440,15 @@ function genModulePieces(mod: Module, ctx: ModuleCtx): PanelPiece[] {
         piece({
           role: "drawer-bottom",
           orientation: "horizontal-xz",
-          widthM: backWidth,
+          widthM: bottomWidth,
           heightM: bottomDepth,
           thicknessMm,
           isHardware: false,
           centerX: centerXCol,
-          centerY: yBottom + 0.02,
+          centerY: yBottom + thicknessM / 2,
           centerZ: depthM / 2,
-          sizeX: backWidth,
-          sizeY: thicknessM / 2,
+          sizeX: bottomWidth,
+          sizeY: thicknessM,
           sizeZ: bottomDepth,
         }),
       ];
