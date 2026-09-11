@@ -83,10 +83,8 @@ export function MaterialsSection({
     await load();
   }
 
-  const budget = computeBudget(panels, cutlist, materials, assignments, { extraCost, currency });
   const projectMaterialId = assignments.find((a) => a.scope === "project")?.materialId ?? "";
   const backMaterialId = assignments.find((a) => a.scope === "back-panel")?.materialId ?? "";
-  const margin = sellPrice > 0 ? sellPrice - budget.grandTotal : null;
 
   // Every distinct material actually assigned somewhere in this project (project default,
   // back panel, per-column, per-module) — not the whole catalog — since those are the only
@@ -96,6 +94,22 @@ export function MaterialsSection({
     return materials.filter((m) => ids.has(m.id));
   }, [assignments, materials]);
   const usedMaterialsKey = usedMaterials.map((m) => `${m.id}:${m.pricePerSheet ?? ""}`).join("|");
+
+  // The budget reacts to what's typed in the price fields immediately — not just after the
+  // blur-triggered save round-trips to the server — so "Total estimado" moves live as you type
+  // instead of appearing frozen until you click away.
+  const materialsForBudget = React.useMemo(
+    () =>
+      materials.map((m) => {
+        const draft = priceDrafts[m.id];
+        if (draft === undefined || draft === "") return m;
+        const parsed = Number(draft);
+        return Number.isFinite(parsed) ? { ...m, pricePerSheet: parsed } : m;
+      }),
+    [materials, priceDrafts]
+  );
+  const budget = computeBudget(panels, cutlist, materialsForBudget, assignments, { extraCost, currency });
+  const margin = sellPrice > 0 ? sellPrice - budget.grandTotal : null;
 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync drafts when the set of used materials (or their saved prices) changes
