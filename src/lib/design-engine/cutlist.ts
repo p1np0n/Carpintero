@@ -35,6 +35,16 @@ function groupKey(p: PanelPiece): string {
   );
 }
 
+/** The same stable grouping key as `groupKey`, but derived from an already-computed
+ * `CutlistRow` — used to remember which part *type* the user excluded (e.g. "I already
+ * have this board") across re-renders. It's keyed on role/orientation/dimensions rather
+ * than the row's own `cutlistId` (E1, S2, ...), since that label is only stable as long as
+ * nothing earlier in the design changes — a persisted exclusion keyed on the label could
+ * silently latch onto a completely different part after an edit. */
+export function cutlistRowKey(row: CutlistRow): string {
+  return [row.role, row.orientation, row.widthM.toFixed(4), row.heightM.toFixed(4), row.thicknessMm].join("|");
+}
+
 export function computeCutlist(panels: PanelPiece[]): CutlistRow[] {
   const groups = new Map<string, CutlistRow>();
   const familyCounters: Record<string, number> = {};

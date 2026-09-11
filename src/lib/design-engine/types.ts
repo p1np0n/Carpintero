@@ -102,6 +102,11 @@ export interface GlobalParams {
    * independent of (and compared against) the computed material + extras cost, so the
    * budget section can show the resulting margin. */
   sellPriceManual?: number;
+  /** Part types (keyed by role/orientation/dimensions — see `cutlistRowKey`) manually
+   * excluded from the cutlist, e.g. because the maker already has that board on hand and
+   * doesn't need to cut or buy it. Excluded from the budget, nesting and exports, but the
+   * cutlist table still lists them (struck through) so they can be re-included. */
+  excludedPartKeys?: string[];
 }
 
 export interface Design {

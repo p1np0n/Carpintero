@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computePanels } from "../panels";
-import { computeCutlist, computeCutlistTotals } from "../cutlist";
+import { computeCutlist, computeCutlistTotals, cutlistRowKey } from "../cutlist";
 import { DEFAULT_GLOBAL_PARAMS, type Design } from "../types";
 
 const design: Design = {
@@ -67,5 +67,27 @@ describe("computeCutlist", () => {
     expect(totals.totalHardwarePieces).toBe(3); // the rod plus its two end brackets
     expect(totals.totalPanelPieces).toBeGreaterThan(0); // carcass pieces are still panels
     expect(totals.totalAreaSqm).toBeGreaterThan(0);
+  });
+});
+
+describe("cutlistRowKey", () => {
+  it("is stable across recomputation even if the row's cutlistId label would shift", () => {
+    const panels = computePanels(design);
+    const cutlist = computeCutlist(panels);
+    const backRow = cutlist.find((r) => r.role === "back-panel")!;
+
+    // Same shape, but relabeled as if an earlier family had grown — the key must not
+    // depend on the ephemeral cutlistId, only on role/orientation/dimensions.
+    const relabeled = { ...backRow, cutlistId: "B99" };
+    expect(cutlistRowKey(relabeled)).toBe(cutlistRowKey(backRow));
+  });
+
+  it("differs for rows with different dimensions or roles", () => {
+    const panels = computePanels(design);
+    const cutlist = computeCutlist(panels);
+    const backRow = cutlist.find((r) => r.role === "back-panel")!;
+    const doorRow = cutlist.find((r) => r.role === "door-front")!;
+
+    expect(cutlistRowKey(backRow)).not.toBe(cutlistRowKey(doorRow));
   });
 });
