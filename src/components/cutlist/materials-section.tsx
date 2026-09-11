@@ -31,7 +31,7 @@ export function MaterialsSection({
   const sellPrice = useDesignStore((s) => s.design.globalParams.sellPriceManual ?? 0);
   const currency = useDesignStore((s) => s.design.globalParams.currency ?? "CLP");
   const setGlobalParams = useDesignStore((s) => s.setGlobalParams);
-  const [priceDraft, setPriceDraft] = React.useState("");
+  const [priceDrafts, setPriceDrafts] = React.useState<Record<string, string>>({});
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -86,27 +86,37 @@ export function MaterialsSection({
   const budget = computeBudget(panels, cutlist, materials, assignments, { extraCost, currency });
   const projectMaterialId = assignments.find((a) => a.scope === "project")?.materialId ?? "";
   const backMaterialId = assignments.find((a) => a.scope === "back-panel")?.materialId ?? "";
-  const projectMaterial = materials.find((m) => m.id === projectMaterialId);
   const margin = sellPrice > 0 ? sellPrice - budget.grandTotal : null;
 
-  React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync the draft when the selected material (or its saved price) changes
-    setPriceDraft(projectMaterial?.pricePerSheet != null ? String(projectMaterial.pricePerSheet) : "");
-  }, [projectMaterial?.id, projectMaterial?.pricePerSheet]);
+  // Every distinct material actually assigned somewhere in this project (project default,
+  // back panel, per-column, per-module) — not the whole catalog — since those are the only
+  // ones whose price actually affects this project's cost.
+  const usedMaterials = React.useMemo(() => {
+    const ids = new Set(assignments.map((a) => a.materialId));
+    return materials.filter((m) => ids.has(m.id));
+  }, [assignments, materials]);
+  const usedMaterialsKey = usedMaterials.map((m) => `${m.id}:${m.pricePerSheet ?? ""}`).join("|");
 
-  async function savePrice() {
-    if (!projectMaterial || priceDraft === "") return;
-    const nextPrice = Number(priceDraft);
-    if (nextPrice === projectMaterial.pricePerSheet) return;
-    await updateMaterial(projectMaterial.id, {
-      name: projectMaterial.name,
-      type: projectMaterial.type,
-      thicknessMm: projectMaterial.thicknessMm,
-      pricePerSqm: projectMaterial.pricePerSqm ?? undefined,
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync drafts when the set of used materials (or their saved prices) changes
+    setPriceDrafts(Object.fromEntries(usedMaterials.map((m) => [m.id, m.pricePerSheet != null ? String(m.pricePerSheet) : ""])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- usedMaterialsKey captures every id+price this needs to react to
+  }, [usedMaterialsKey]);
+
+  async function savePrice(material: Material) {
+    const draft = priceDrafts[material.id];
+    if (draft === undefined || draft === "") return;
+    const nextPrice = Number(draft);
+    if (nextPrice === material.pricePerSheet) return;
+    await updateMaterial(material.id, {
+      name: material.name,
+      type: material.type,
+      thicknessMm: material.thicknessMm,
+      pricePerSqm: material.pricePerSqm ?? undefined,
       pricePerSheet: nextPrice,
-      sheetWidthM: projectMaterial.sheetWidthM,
-      sheetHeightM: projectMaterial.sheetHeightM,
-      currency: projectMaterial.currency,
+      sheetWidthM: material.sheetWidthM,
+      sheetHeightM: material.sheetHeightM,
+      currency: material.currency,
     });
     await load();
   }
@@ -136,22 +146,6 @@ export function MaterialsSection({
                 ))}
               </SelectContent>
             </Select>
-            {projectMaterial && (
-              <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground" title="Se actualiza en el catálogo compartido — afecta a todos los proyectos que usen este material">
-                  Valor de la plancha de {projectMaterial.name} ({currency})
-                </Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={priceDraft}
-                  onChange={(e) => setPriceDraft(e.target.value)}
-                  onBlur={savePrice}
-                  placeholder="Valor de la plancha"
-                  className="h-8"
-                />
-              </div>
-            )}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground" title="Los paneles traseros siempre usan este material, sin importar el material asignado al frente de esa columna o módulo">
@@ -244,6 +238,32 @@ export function MaterialsSection({
                   );
                 })
               )}
+            </div>
+          </div>
+        )}
+
+        {usedMaterials.length > 0 && (
+          <div className="space-y-2 border-t border-border pt-3">
+            <Label className="text-xs text-muted-foreground" title="El precio de cada material se guarda en el catálogo compartido — afecta a todos los proyectos que usen ese mismo material">
+              Valor de cada material usado en este mueble ({currency})
+            </Label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {usedMaterials.map((m) => (
+                <div key={m.id} className="flex items-center gap-2">
+                  <span className="w-32 shrink-0 truncate text-xs text-muted-foreground" title={m.name}>
+                    {m.name}
+                  </span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={priceDrafts[m.id] ?? ""}
+                    onChange={(e) => setPriceDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                    onBlur={() => savePrice(m)}
+                    placeholder="Valor de la plancha"
+                    className="h-8 flex-1"
+                  />
+                </div>
+              ))}
             </div>
           </div>
         )}
