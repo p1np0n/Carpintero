@@ -93,4 +93,19 @@ describe("packSheets (guillotine best-short-side-fit)", () => {
     expect(result.unplaced).toHaveLength(0);
     expect(result.wastePct).toBeCloseTo(floorWastePct, 1);
   });
+
+  it("fills the leftover strip beside a tall piece with smaller pieces instead of opening a new sheet", () => {
+    // A 1.9m-tall piece on a 2.44m sheet leaves a ~0.54m strip; several 0.3m-tall pieces
+    // should share that sheet rather than each forcing (or piling onto) a separate one —
+    // a shelf packer that only reuses already-open shelves and never opens a fresh,
+    // exactly-sized one in that leftover headroom fails this by stranding it as waste.
+    const rows = [
+      row({ cutlistId: "TALL", widthM: 0.6, heightM: 1.9, qty: 1 }),
+      row({ cutlistId: "SMALL", widthM: 0.4, heightM: 0.3, qty: 5 }),
+    ];
+    const result = packSheets(rows, { widthM: 1.83, heightM: 2.44 });
+
+    expect(result.sheetCount).toBe(1);
+    expect(result.unplaced).toHaveLength(0);
+  });
 });
