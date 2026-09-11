@@ -9,7 +9,7 @@ import { computeBudget } from "@/lib/design-engine/budget";
 import type { PanelPiece } from "@/lib/design-engine/panels";
 import type { CutlistRow } from "@/lib/design-engine/cutlist";
 import type { Material, MaterialAssignment } from "@/lib/design-engine/materials";
-import { ensureSeedMaterials, listAssignments, listMaterials, setMaterialAssignment } from "@/app/actions/materials";
+import { ensureSeedMaterials, listAssignments, listMaterials, setMaterialAssignment, updateMaterial } from "@/app/actions/materials";
 import { useDesignStore } from "@/store/design-store";
 import { formatCurrency } from "@/lib/format";
 import { MODULE_TYPE_LABELS } from "@/lib/design-engine/labels";
@@ -28,8 +28,10 @@ export function MaterialsSection({
   const [loading, setLoading] = React.useState(true);
   const columns = useDesignStore((s) => s.design.columns);
   const extraCost = useDesignStore((s) => s.design.globalParams.extraCostManual ?? 0);
+  const sellPrice = useDesignStore((s) => s.design.globalParams.sellPriceManual ?? 0);
   const currency = useDesignStore((s) => s.design.globalParams.currency ?? "CLP");
   const setGlobalParams = useDesignStore((s) => s.setGlobalParams);
+  const [priceDraft, setPriceDraft] = React.useState("");
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -84,6 +86,30 @@ export function MaterialsSection({
   const budget = computeBudget(panels, cutlist, materials, assignments, { extraCost, currency });
   const projectMaterialId = assignments.find((a) => a.scope === "project")?.materialId ?? "";
   const backMaterialId = assignments.find((a) => a.scope === "back-panel")?.materialId ?? "";
+  const projectMaterial = materials.find((m) => m.id === projectMaterialId);
+  const margin = sellPrice > 0 ? sellPrice - budget.grandTotal : null;
+
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync the draft when the selected material (or its saved price) changes
+    setPriceDraft(projectMaterial?.pricePerSheet != null ? String(projectMaterial.pricePerSheet) : "");
+  }, [projectMaterial?.id, projectMaterial?.pricePerSheet]);
+
+  async function savePrice() {
+    if (!projectMaterial || priceDraft === "") return;
+    const nextPrice = Number(priceDraft);
+    if (nextPrice === projectMaterial.pricePerSheet) return;
+    await updateMaterial(projectMaterial.id, {
+      name: projectMaterial.name,
+      type: projectMaterial.type,
+      thicknessMm: projectMaterial.thicknessMm,
+      pricePerSqm: projectMaterial.pricePerSqm ?? undefined,
+      pricePerSheet: nextPrice,
+      sheetWidthM: projectMaterial.sheetWidthM,
+      sheetHeightM: projectMaterial.sheetHeightM,
+      currency: projectMaterial.currency,
+    });
+    await load();
+  }
 
   return (
     <Card>
@@ -110,6 +136,22 @@ export function MaterialsSection({
                 ))}
               </SelectContent>
             </Select>
+            {projectMaterial && (
+              <div className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground" title="Se actualiza en el catálogo compartido — afecta a todos los proyectos que usen este material">
+                  Valor de la plancha de {projectMaterial.name} ({currency})
+                </Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={priceDraft}
+                  onChange={(e) => setPriceDraft(e.target.value)}
+                  onBlur={savePrice}
+                  placeholder="Valor de la plancha"
+                  className="h-8"
+                />
+              </div>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground" title="Los paneles traseros siempre usan este material, sin importar el material asignado al frente de esa columna o módulo">
@@ -212,16 +254,53 @@ export function MaterialsSection({
           <Stat label="Herrajes/otros" value={formatCurrency(budget.extraCost, currency)} />
           <Stat label="Total estimado" value={formatCurrency(budget.grandTotal, currency)} emphasis />
         </div>
+
+        <div className="grid gap-4 border-t border-border pt-3 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground" title="Lo que le vas a cobrar al cliente por el mueble terminado — independiente del costo de materiales calculado arriba">
+              Precio a cobrar por el mueble ({currency})
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              value={sellPrice || ""}
+              onChange={(e) => setGlobalParams({ sellPriceManual: Number(e.target.value) })}
+              placeholder="Ej: 450000"
+              className="h-8"
+            />
+          </div>
+          {margin !== null && (
+            <Stat
+              label="Utilidad (precio a cobrar − costo)"
+              value={formatCurrency(margin, currency)}
+              emphasis
+              tone={margin >= 0 ? "positive" : "negative"}
+            />
+          )}
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-function Stat({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
+function Stat({
+  label,
+  value,
+  emphasis,
+  tone,
+}: {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+  tone?: "positive" | "negative";
+}) {
+  const sizeClass = emphasis ? "text-lg font-semibold" : "text-sm font-medium";
+  const colorClass =
+    tone === "positive" ? "text-green-600 dark:text-green-400" : tone === "negative" ? "text-red-600 dark:text-red-400" : "text-primary";
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={emphasis ? "text-lg font-semibold text-primary" : "text-sm font-medium"}>{value}</p>
+      <p className={`${sizeClass} ${tone ? colorClass : emphasis ? "text-primary" : ""}`}>{value}</p>
     </div>
   );
 }

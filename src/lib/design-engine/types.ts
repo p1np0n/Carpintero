@@ -98,6 +98,10 @@ export interface GlobalParams {
    * (correderas) have room between the box and the cabinet's inner walls — typical
    * side-mount ball-bearing slides need about 13mm per side. Falls back to 26mm. */
   drawerSlideClearanceMm?: number;
+  /** What the maker plans to charge the client for this piece, entered manually —
+   * independent of (and compared against) the computed material + extras cost, so the
+   * budget section can show the resulting margin. */
+  sellPriceManual?: number;
 }
 
 export interface Design {
