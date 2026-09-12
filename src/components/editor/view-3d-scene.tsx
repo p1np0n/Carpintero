@@ -179,9 +179,11 @@ function Piece3DMesh({
  * height and depth) — not just whatever physical board(s) it happens to generate. A
  * "shelf" module, for instance, only produces one thin board, which on its own barely
  * reads as "selected"; this makes the entire compartment it occupies stand out, matching
- * the filled rectangle already shown for the selected module in the 2D editor. Only
- * meaningful in "solid" mode: "open"/"exploded" pull pieces away from this slot, so a
- * static box there would no longer line up with anything. */
+ * the filled rectangle already shown for the selected module in the 2D editor. Shown in
+ * "solid" and "open" mode — "open" only swings doors and slides drawer fronts forward,
+ * every other piece (shelves, sides, back, dividers) stays right where "solid" has it, so
+ * the compartment itself never moves. Skipped in "exploded" mode, which scatters every
+ * piece away from its slot, leaving nothing here for a static box to line up with. */
 function SelectedModuleHighlight({ design, selectedModuleId }: { design: Design; selectedModuleId?: string | null }) {
   if (!selectedModuleId) return null;
   const { layout2D } = computeDesignMemoized(design);
@@ -216,7 +218,7 @@ function FurnitureModel({
   const { pieces3D } = computeDesignMemoized(design);
   return (
     <group>
-      {mode === "solid" && <SelectedModuleHighlight design={design} selectedModuleId={selectedModuleId} />}
+      {mode !== "exploded" && <SelectedModuleHighlight design={design} selectedModuleId={selectedModuleId} />}
       {pieces3D.map((p) => (
         <Piece3DMesh key={p.id} piece={p} mode={mode} selectedModuleId={selectedModuleId} onSelectModule={onSelectModule} />
       ))}
