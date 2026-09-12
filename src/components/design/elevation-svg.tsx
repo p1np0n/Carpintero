@@ -4,8 +4,11 @@ import { computeLayout2D, type ModuleRect } from "@/lib/design-engine/layout2d";
 import type { Design, FullDoorConfig } from "@/lib/design-engine/types";
 
 const GRAPHITE = "#3f3f46";
-const GRAPHITE_SOFT = "#3f3f4633";
 const ID_LABEL_COLOR = "#2563eb";
+// Matches the 3D view's SELECTED_COLOR so a selected module reads as the same "this is
+// selected" blue in both views.
+const SELECTED_BLUE = "#60a5fa";
+const SELECTED_BLUE_SOFT = "#60a5fa33";
 
 /** Cutlist ID tag for one piece, placed at its own center in the elevation's absolute
  * design-space coordinates — a white outline keeps it legible over any stroke or fill
@@ -30,7 +33,17 @@ function PieceIdLabel({ x, y, text }: { x: number; y: number; text: string }) {
   );
 }
 
-function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => number }) {
+function ModuleDecoration({
+  rect,
+  mm,
+  color = GRAPHITE,
+}: {
+  rect: ModuleRect;
+  mm: (v: number) => number;
+  /** Overridden to the selection blue when this module (and therefore every section
+   * drawn here — dividers, repeated sub-parts, etc.) is the selected one. */
+  color?: string;
+}) {
   const w = mm(rect.width);
   const h = mm(rect.height);
   const cx = w / 2;
@@ -38,44 +51,44 @@ function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => n
 
   switch (rect.module.type) {
     case "shelf":
-      return <line x1={0} y1={4} x2={w} y2={4} stroke={GRAPHITE} strokeWidth={2} />;
+      return <line x1={0} y1={4} x2={w} y2={4} stroke={color} strokeWidth={2} />;
     case "drawer":
       return (
         <>
-          <line x1={0} y1={3} x2={w} y2={3} stroke={GRAPHITE} strokeWidth={1.5} />
-          <rect x={cx - w * 0.12} y={cy - 2} width={w * 0.24} height={4} fill={GRAPHITE} rx={2} />
+          <line x1={0} y1={3} x2={w} y2={3} stroke={color} strokeWidth={1.5} />
+          <rect x={cx - w * 0.12} y={cy - 2} width={w * 0.24} height={4} fill={color} rx={2} />
         </>
       );
     case "doors":
       return (
         <>
-          <line x1={cx} y1={2} x2={cx} y2={h - 2} stroke={GRAPHITE} strokeWidth={1.5} />
-          <circle cx={cx - w * 0.08} cy={cy} r={3} fill={GRAPHITE} />
-          <circle cx={cx + w * 0.08} cy={cy} r={3} fill={GRAPHITE} />
+          <line x1={cx} y1={2} x2={cx} y2={h - 2} stroke={color} strokeWidth={1.5} />
+          <circle cx={cx - w * 0.08} cy={cy} r={3} fill={color} />
+          <circle cx={cx + w * 0.08} cy={cy} r={3} fill={color} />
         </>
       );
     case "left-door":
-      return <circle cx={w - w * 0.1} cy={cy} r={3} fill={GRAPHITE} />;
+      return <circle cx={w - w * 0.1} cy={cy} r={3} fill={color} />;
     case "right-door":
-      return <circle cx={w * 0.1} cy={cy} r={3} fill={GRAPHITE} />;
+      return <circle cx={w * 0.1} cy={cy} r={3} fill={color} />;
     case "hanging-rod":
       return (
         <>
-          <line x1={4} y1={cy} x2={w - 4} y2={cy} stroke={GRAPHITE} strokeWidth={2} strokeDasharray="6 4" />
-          <circle cx={4} cy={cy} r={3} fill={GRAPHITE} />
-          <circle cx={w - 4} cy={cy} r={3} fill={GRAPHITE} />
+          <line x1={4} y1={cy} x2={w - 4} y2={cy} stroke={color} strokeWidth={2} strokeDasharray="6 4" />
+          <circle cx={4} cy={cy} r={3} fill={color} />
+          <circle cx={w - 4} cy={cy} r={3} fill={color} />
         </>
       );
     case "legs":
       return (
         <>
-          <line x1={4} y1={h} x2={4} y2={h - 10} stroke={GRAPHITE} strokeWidth={3} />
-          <line x1={w - 4} y1={h} x2={w - 4} y2={h - 10} stroke={GRAPHITE} strokeWidth={3} />
+          <line x1={4} y1={h} x2={4} y2={h - 10} stroke={color} strokeWidth={3} />
+          <line x1={w - 4} y1={h} x2={w - 4} y2={h - 10} stroke={color} strokeWidth={3} />
         </>
       );
     case "top-moulding":
     case "bottom-moulding":
-      return <rect x={0} y={rect.module.type === "top-moulding" ? h - 6 : 0} width={w} height={6} fill={GRAPHITE} opacity={0.6} />;
+      return <rect x={0} y={rect.module.type === "top-moulding" ? h - 6 : 0} width={w} height={6} fill={color} opacity={0.6} />;
     case "multiple": {
       const count = rect.module.multipleCount ?? 1;
       const subHeight = h / count;
@@ -88,7 +101,7 @@ function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => n
               y1={(i + 1) * subHeight}
               x2={w}
               y2={(i + 1) * subHeight}
-              stroke={GRAPHITE}
+              stroke={color}
               strokeWidth={1}
             />
           ))}
@@ -99,7 +112,7 @@ function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => n
               y={i * subHeight + subHeight / 2 - 2}
               width={w * 0.24}
               height={4}
-              fill={GRAPHITE}
+              fill={color}
               rx={2}
             />
           ))}
@@ -114,7 +127,17 @@ function ModuleDecoration({ rect, mm }: { rect: ModuleRect; mm: (v: number) => n
 
 /** Vertical partition line(s) splitting a module into equal-width side-by-side sections —
  * drawn on top of whatever the module's own type decoration already shows. */
-function VerticalDividerLines({ count, width, height }: { count: number; width: number; height: number }) {
+function VerticalDividerLines({
+  count,
+  width,
+  height,
+  color = GRAPHITE,
+}: {
+  count: number;
+  width: number;
+  height: number;
+  color?: string;
+}) {
   const sectionWidth = width / (count + 1);
   return (
     <>
@@ -125,7 +148,7 @@ function VerticalDividerLines({ count, width, height }: { count: number; width: 
           y1={2}
           x2={sectionWidth * (i + 1)}
           y2={height - 2}
-          stroke={GRAPHITE}
+          stroke={color}
           strokeWidth={2}
         />
       ))}
@@ -135,7 +158,17 @@ function VerticalDividerLines({ count, width, height }: { count: number; width: 
 
 /** Horizontal shelf line(s) splitting a module into equal-height stacked sections —
  * drawn on top of whatever the module's own type decoration already shows. */
-function HorizontalDividerLines({ count, width, height }: { count: number; width: number; height: number }) {
+function HorizontalDividerLines({
+  count,
+  width,
+  height,
+  color = GRAPHITE,
+}: {
+  count: number;
+  width: number;
+  height: number;
+  color?: string;
+}) {
   const sectionHeight = height / (count + 1);
   return (
     <>
@@ -146,7 +179,7 @@ function HorizontalDividerLines({ count, width, height }: { count: number; width
           y1={sectionHeight * (i + 1)}
           x2={width - 2}
           y2={sectionHeight * (i + 1)}
-          stroke={GRAPHITE}
+          stroke={color}
           strokeWidth={2}
         />
       ))}
@@ -265,17 +298,27 @@ export function ElevationSvg({ design, selectedModuleId, onSelectModule, classNa
                   y={0}
                   width={mm(rect.width)}
                   height={mm(rect.height)}
-                  fill={isSelected ? GRAPHITE_SOFT : "transparent"}
-                  stroke={isSelected ? GRAPHITE : "currentColor"}
+                  fill={isSelected ? SELECTED_BLUE_SOFT : "transparent"}
+                  stroke={isSelected ? SELECTED_BLUE : "currentColor"}
                   strokeOpacity={isSelected ? 1 : 0.6}
                   strokeWidth={isSelected ? 2.5 : 1.5}
                 />
-                <ModuleDecoration rect={rect} mm={mm} />
+                <ModuleDecoration rect={rect} mm={mm} color={isSelected ? SELECTED_BLUE : undefined} />
                 {!!rect.module.verticalDividers && (
-                  <VerticalDividerLines count={rect.module.verticalDividers} width={mm(rect.width)} height={mm(rect.height)} />
+                  <VerticalDividerLines
+                    count={rect.module.verticalDividers}
+                    width={mm(rect.width)}
+                    height={mm(rect.height)}
+                    color={isSelected ? SELECTED_BLUE : undefined}
+                  />
                 )}
                 {!!rect.module.horizontalDividers && (
-                  <HorizontalDividerLines count={rect.module.horizontalDividers} width={mm(rect.width)} height={mm(rect.height)} />
+                  <HorizontalDividerLines
+                    count={rect.module.horizontalDividers}
+                    width={mm(rect.width)}
+                    height={mm(rect.height)}
+                    color={isSelected ? SELECTED_BLUE : undefined}
+                  />
                 )}
                 {!!rect.module.newBoxHere && <BoxSeamLine width={mm(rect.width)} height={mm(rect.height)} />}
               </g>
