@@ -175,6 +175,33 @@ function Piece3DMesh({
   );
 }
 
+/** Translucent blue box spanning the selected module's whole slot (its full width,
+ * height and depth) — not just whatever physical board(s) it happens to generate. A
+ * "shelf" module, for instance, only produces one thin board, which on its own barely
+ * reads as "selected"; this makes the entire compartment it occupies stand out, matching
+ * the filled rectangle already shown for the selected module in the 2D editor. Only
+ * meaningful in "solid" mode: "open"/"exploded" pull pieces away from this slot, so a
+ * static box there would no longer line up with anything. */
+function SelectedModuleHighlight({ design, selectedModuleId }: { design: Design; selectedModuleId?: string | null }) {
+  if (!selectedModuleId) return null;
+  const { layout2D } = computeDesignMemoized(design);
+  const depthM = design.globalParams.depthM;
+
+  for (const col of layout2D.columns) {
+    const rect = col.modules.find((m) => m.module.id === selectedModuleId);
+    if (!rect) continue;
+    const position: [number, number, number] = [rect.x + rect.width / 2, rect.y + rect.height / 2, depthM / 2];
+    return (
+      <mesh position={position} renderOrder={1}>
+        <boxGeometry args={[rect.width, Math.max(rect.height, 0.004), depthM]} />
+        <meshStandardMaterial color={SELECTED_COLOR} transparent opacity={0.18} depthWrite={false} />
+        <Edges color={SELECTED_COLOR} lineWidth={2} />
+      </mesh>
+    );
+  }
+  return null;
+}
+
 function FurnitureModel({
   design,
   mode,
@@ -189,6 +216,7 @@ function FurnitureModel({
   const { pieces3D } = computeDesignMemoized(design);
   return (
     <group>
+      {mode === "solid" && <SelectedModuleHighlight design={design} selectedModuleId={selectedModuleId} />}
       {pieces3D.map((p) => (
         <Piece3DMesh key={p.id} piece={p} mode={mode} selectedModuleId={selectedModuleId} onSelectModule={onSelectModule} />
       ))}

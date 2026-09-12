@@ -431,14 +431,16 @@ function ModuleBox({
       style={{ height: heightPx }}
       className={cn(
         "relative flex w-full flex-col items-center justify-center gap-0.5 overflow-hidden border-t border-border/60 bg-secondary/30 px-1.5 text-center leading-tight text-foreground transition-colors first:border-t-0 hover:bg-secondary/60",
-        isSelected && "border-2 border-primary bg-primary text-primary-foreground hover:bg-primary"
+        // Matches the 3D view's selection blue (#60a5fa = Tailwind's blue-400) so a
+        // selected module reads the same way — the whole box filled in blue — in both.
+        isSelected && "border-2 border-blue-400 bg-blue-400 text-white hover:bg-blue-400"
       )}
     >
       {cutlistIds.length > 0 && (
         <span
           className={cn(
             "absolute right-1 top-1 max-w-[80%] truncate rounded px-1 py-0.5 font-mono text-[9px] font-semibold leading-none",
-            isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"
+            isSelected ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
           )}
           title={`Piezas del listado de corte: ${cutlistIds.join(", ")}`}
         >
@@ -448,14 +450,14 @@ function ModuleBox({
       {Array.from({ length: rect.module.verticalDividers ?? 0 }).map((_, i, arr) => (
         <div
           key={i}
-          className={cn("pointer-events-none absolute inset-y-0 w-px", isSelected ? "bg-primary-foreground/70" : "bg-foreground/50")}
+          className={cn("pointer-events-none absolute inset-y-0 w-px", isSelected ? "bg-white/70" : "bg-foreground/50")}
           style={{ left: `${((i + 1) / (arr.length + 1)) * 100}%` }}
         />
       ))}
       {Array.from({ length: rect.module.horizontalDividers ?? 0 }).map((_, i, arr) => (
         <div
           key={i}
-          className={cn("pointer-events-none absolute inset-x-0 h-px", isSelected ? "bg-primary-foreground/70" : "bg-foreground/50")}
+          className={cn("pointer-events-none absolute inset-x-0 h-px", isSelected ? "bg-white/70" : "bg-foreground/50")}
           style={{ top: `${((i + 1) / (arr.length + 1)) * 100}%` }}
         />
       ))}
@@ -464,7 +466,7 @@ function ModuleBox({
         <span
           className={cn(
             "flex items-center gap-0.5 text-[11px] tabular-nums",
-            isSelected ? "text-primary-foreground/85" : "text-muted-foreground"
+            isSelected ? "text-white/85" : "text-muted-foreground"
           )}
         >
           {rect.width.toFixed(2)} × <ArrowUpDown className="size-2.5" /> {rect.height.toFixed(2)} m
