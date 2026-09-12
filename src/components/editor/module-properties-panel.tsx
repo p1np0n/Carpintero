@@ -1,10 +1,11 @@
 "use client";
 
-import { Rows2, Trash2 } from "lucide-react";
+import { Boxes, Rows2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { useDesignStore } from "@/store/design-store";
 import { MODULE_TYPES } from "@/lib/design-engine/types";
 import type { ModuleType, RepeatableModuleType } from "@/lib/design-engine/types";
@@ -15,6 +16,7 @@ export function ModulePropertiesPanel() {
   const selectedModuleId = useDesignStore((s) => s.selectedModuleId);
   const column = useDesignStore((s) => s.design.columns.find((c) => c.id === selectedColumnId));
   const mod = column?.modules.find((m) => m.id === selectedModuleId);
+  const moduleIndex = column?.modules.findIndex((m) => m.id === selectedModuleId) ?? -1;
   const setModuleHeight = useDesignStore((s) => s.setModuleHeight);
   const setModuleType = useDesignStore((s) => s.setModuleType);
   const updateModuleProps = useDesignStore((s) => s.updateModuleProps);
@@ -183,10 +185,26 @@ export function ModulePropertiesPanel() {
         </>
       )}
 
+      {moduleIndex > 0 && (
+        <Button
+          variant={mod.newBoxHere ? "default" : "outline"}
+          size="sm"
+          className={cn("ml-auto", mod.newBoxHere && "bg-orange-700 hover:bg-orange-800")}
+          title={
+            mod.newBoxHere
+              ? "Este módulo empieza una caja independiente (laterales, fondo y tapas propias). Click para volver a unirlo a la caja de abajo."
+              : "Hace que este módulo empiece una caja independiente en vez de compartir los laterales continuos de la columna"
+          }
+          onClick={() => updateModuleProps(column.id, mod.id, { newBoxHere: !mod.newBoxHere })}
+        >
+          <Boxes /> {mod.newBoxHere ? "Caja independiente" : "Separar en caja nueva"}
+        </Button>
+      )}
+
       <Button
         variant="outline"
         size="sm"
-        className="ml-auto"
+        className={moduleIndex > 0 ? "" : "ml-auto"}
         disabled={mod.heightM / 2 < 0.02}
         title="Divide este módulo en dos módulos apilados, cada uno con la mitad de la altura"
         onClick={() => splitModule(column.id, mod.id)}

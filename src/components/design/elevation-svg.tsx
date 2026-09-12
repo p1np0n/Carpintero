@@ -154,6 +154,21 @@ function HorizontalDividerLines({ count, width, height }: { count: number; width
   );
 }
 
+const BOX_SEAM_COLOR = "#c2410c";
+
+/** Marks the seam where a module's `newBoxHere` flag breaks the column into two
+ * independent physical carcasses — drawn as a double line along the module's bottom
+ * edge, the boundary with the box stacked underneath it. */
+function BoxSeamLine({ width, height }: { width: number; height: number }) {
+  return (
+    <>
+      <line x1={0} y1={height - 3} x2={width} y2={height - 3} stroke={BOX_SEAM_COLOR} strokeWidth={2} />
+      <line x1={0} y1={height + 1} x2={width} y2={height + 1} stroke={BOX_SEAM_COLOR} strokeWidth={2} />
+      <title>Caja independiente: aquí termina una caja y empieza otra</title>
+    </>
+  );
+}
+
 /** Overlay marking a column-wide door (spanning every module in the column) — an inset
  * dashed outline plus handle knob(s), drawn on top of the column's own outline. */
 function FullDoorDecoration({ config, width, y, height }: { config: FullDoorConfig; width: number; y: number; height: number }) {
@@ -262,6 +277,7 @@ export function ElevationSvg({ design, selectedModuleId, onSelectModule, classNa
                 {!!rect.module.horizontalDividers && (
                   <HorizontalDividerLines count={rect.module.horizontalDividers} width={mm(rect.width)} height={mm(rect.height)} />
                 )}
+                {!!rect.module.newBoxHere && <BoxSeamLine width={mm(rect.width)} height={mm(rect.height)} />}
               </g>
             );
           })}

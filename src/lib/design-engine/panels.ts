@@ -57,6 +57,37 @@ function round(n: number, dp = 5): number {
   return Math.round(n * f) / f;
 }
 
+/** One independent physical carcass (box) within a column: its own sides, back panel
+ * and top/bottom caps. A column with no `newBoxHere` modules is a single box spanning
+ * its full height — the previous, still-default behavior. Setting `newBoxHere` on a
+ * module breaks the column into more boxes stacked at that point instead. */
+interface BoxSegment {
+  yBottom: number;
+  heightM: number;
+  modules: Module[];
+}
+
+function computeBoxSegments(column: Column): BoxSegment[] {
+  const segments: BoxSegment[] = [];
+  let current: Module[] = [];
+  let currentYBottom = column.mountHeightM ?? 0;
+
+  for (const mod of column.modules) {
+    if (mod.newBoxHere && current.length > 0) {
+      const heightM = current.reduce((sum, m) => sum + m.heightM, 0);
+      segments.push({ yBottom: currentYBottom, heightM, modules: current });
+      currentYBottom += heightM;
+      current = [];
+    }
+    current.push(mod);
+  }
+  if (current.length > 0) {
+    const heightM = current.reduce((sum, m) => sum + m.heightM, 0);
+    segments.push({ yBottom: currentYBottom, heightM, modules: current });
+  }
+  return segments;
+}
+
 /** Vertical divider panels splitting a module's own compartment into equal-width,
  * side-by-side sections — independent of the module's type-specific pieces (shelf
  * board, doors, etc.), so they layer on top of whatever that type already generates. */
@@ -581,114 +612,71 @@ export function computePanels(design: Design): PanelPiece[] {
     const H = columnHeightM(column);
     const W = column.widthM;
     const innerWidth = round(W - 2 * thicknessM);
-    const mountY = column.mountHeightM ?? 0;
 
-    // Fixed carcass pieces: two sides, back, top cap, bottom cap.
-    pieces.push({
-      id: `${column.id}-side-left`,
-      moduleId: "__carcass__",
-      columnId: column.id,
-      role: "side-panel",
-      orientation: "vertical-yz",
-      widthM: depthM,
-      heightM: H,
-      thicknessMm,
-      isHardware: false,
-      centerX: columnX0 + thicknessM / 2,
-      centerY: mountY + H / 2,
-      centerZ: depthM / 2,
-      sizeX: thicknessM,
-      sizeY: H,
-      sizeZ: depthM,
-    });
-    pieces.push({
-      id: `${column.id}-side-right`,
-      moduleId: "__carcass__",
-      columnId: column.id,
-      role: "side-panel",
-      orientation: "vertical-yz",
-      widthM: depthM,
-      heightM: H,
-      thicknessMm,
-      isHardware: false,
-      centerX: columnX0 + W - thicknessM / 2,
-      centerY: mountY + H / 2,
-      centerZ: depthM / 2,
-      sizeX: thicknessM,
-      sizeY: H,
-      sizeZ: depthM,
-    });
-    pieces.push({
-      id: `${column.id}-back`,
-      moduleId: "__carcass__",
-      columnId: column.id,
-      role: "back-panel",
-      orientation: "vertical-xy",
-      widthM: innerWidth,
-      heightM: H,
-      thicknessMm: backPanelThicknessMm ?? thicknessMm,
-      isHardware: false,
-      centerX: columnX0 + W / 2,
-      centerY: mountY + H / 2,
-      centerZ: backThicknessM / 2,
-      sizeX: innerWidth,
-      sizeY: H,
-      sizeZ: backThicknessM,
-    });
-    if (H > 0) {
+    // One column can be one continuous carcass (the default) or several independent
+    // boxes stacked on top of each other (see `Module.newBoxHere`) — each box gets its
+    // own sides, back panel and top/bottom caps, sized to just that box's height.
+    const segments = computeBoxSegments(column);
+
+    segments.forEach((segment, segIdx) => {
+      const boxId = `${column.id}-box${segIdx}`;
+      const segH = segment.heightM;
+      const segY0 = segment.yBottom;
+
       pieces.push({
-        id: `${column.id}-cap-bottom`,
+        id: `${boxId}-side-left`,
         moduleId: "__carcass__",
         columnId: column.id,
-        role: "shelf",
-        orientation: "horizontal-xz",
-        widthM: innerWidth,
-        heightM: depthM,
+        role: "side-panel",
+        orientation: "vertical-yz",
+        widthM: depthM,
+        heightM: segH,
         thicknessMm,
         isHardware: false,
-        centerX: columnX0 + W / 2,
-        centerY: mountY + thicknessM / 2,
+        centerX: columnX0 + thicknessM / 2,
+        centerY: segY0 + segH / 2,
         centerZ: depthM / 2,
-        sizeX: innerWidth,
-        sizeY: thicknessM,
+        sizeX: thicknessM,
+        sizeY: segH,
         sizeZ: depthM,
       });
       pieces.push({
-        id: `${column.id}-cap-top`,
+        id: `${boxId}-side-right`,
         moduleId: "__carcass__",
         columnId: column.id,
-        role: "shelf",
-        orientation: "horizontal-xz",
-        widthM: innerWidth,
-        heightM: depthM,
+        role: "side-panel",
+        orientation: "vertical-yz",
+        widthM: depthM,
+        heightM: segH,
         thicknessMm,
         isHardware: false,
-        centerX: columnX0 + W / 2,
-        centerY: mountY + H - thicknessM / 2,
+        centerX: columnX0 + W - thicknessM / 2,
+        centerY: segY0 + segH / 2,
         centerZ: depthM / 2,
-        sizeX: innerWidth,
-        sizeY: thicknessM,
+        sizeX: thicknessM,
+        sizeY: segH,
         sizeZ: depthM,
       });
-    }
-
-    let yBottom = mountY;
-    for (let i = 0; i < column.modules.length; i += 1) {
-      const mod = column.modules[i];
-      pieces.push(...genModulePieces(mod, { column, columnX0, globalParams, yBottom }));
-      const yTop = yBottom + mod.heightM;
-
-      // A physical board separating this module from the next one, unless one of them
-      // already places a board at this exact boundary (a "shelf" module puts one at its
-      // own top; a moulding module puts one at its own top/bottom) — avoids a doubled-up
-      // board and gives every other module pair (e.g. two stacked hanging-rod sections)
-      // a visible wooden divider instead of an invisible seam.
-      const nextMod = column.modules[i + 1];
-      const thisProvidesBoard = mod.type === "shelf" || mod.type === "top-moulding";
-      const nextProvidesBoard = nextMod?.type === "bottom-moulding";
-      if (nextMod && !thisProvidesBoard && !nextProvidesBoard) {
+      pieces.push({
+        id: `${boxId}-back`,
+        moduleId: "__carcass__",
+        columnId: column.id,
+        role: "back-panel",
+        orientation: "vertical-xy",
+        widthM: innerWidth,
+        heightM: segH,
+        thicknessMm: backPanelThicknessMm ?? thicknessMm,
+        isHardware: false,
+        centerX: columnX0 + W / 2,
+        centerY: segY0 + segH / 2,
+        centerZ: backThicknessM / 2,
+        sizeX: innerWidth,
+        sizeY: segH,
+        sizeZ: backThicknessM,
+      });
+      if (segH > 0) {
         pieces.push({
-          id: `${column.id}-divider-${i}`,
+          id: `${boxId}-cap-bottom`,
           moduleId: "__carcass__",
           columnId: column.id,
           role: "shelf",
@@ -698,7 +686,24 @@ export function computePanels(design: Design): PanelPiece[] {
           thicknessMm,
           isHardware: false,
           centerX: columnX0 + W / 2,
-          centerY: yTop - thicknessM / 2,
+          centerY: segY0 + thicknessM / 2,
+          centerZ: depthM / 2,
+          sizeX: innerWidth,
+          sizeY: thicknessM,
+          sizeZ: depthM,
+        });
+        pieces.push({
+          id: `${boxId}-cap-top`,
+          moduleId: "__carcass__",
+          columnId: column.id,
+          role: "shelf",
+          orientation: "horizontal-xz",
+          widthM: innerWidth,
+          heightM: depthM,
+          thicknessMm,
+          isHardware: false,
+          centerX: columnX0 + W / 2,
+          centerY: segY0 + segH - thicknessM / 2,
           centerZ: depthM / 2,
           sizeX: innerWidth,
           sizeY: thicknessM,
@@ -706,8 +711,46 @@ export function computePanels(design: Design): PanelPiece[] {
         });
       }
 
-      yBottom = yTop;
-    }
+      let yBottom = segY0;
+      for (let i = 0; i < segment.modules.length; i += 1) {
+        const mod = segment.modules[i];
+        pieces.push(...genModulePieces(mod, { column, columnX0, globalParams, yBottom }));
+        const yTop = yBottom + mod.heightM;
+
+        // A physical board separating this module from the next one (within the same
+        // box), unless one of them already places a board at this exact boundary (a
+        // "shelf" module puts one at its own top; a moulding module puts one at its own
+        // top/bottom) — avoids a doubled-up board and gives every other module pair
+        // (e.g. two stacked hanging-rod sections) a visible wooden divider instead of an
+        // invisible seam. At the box's own last module there's no "next" here even if
+        // the column continues into another box — that boundary is already covered by
+        // this box's top cap meeting the next box's bottom cap.
+        const nextMod = segment.modules[i + 1];
+        const thisProvidesBoard = mod.type === "shelf" || mod.type === "top-moulding";
+        const nextProvidesBoard = nextMod?.type === "bottom-moulding";
+        if (nextMod && !thisProvidesBoard && !nextProvidesBoard) {
+          pieces.push({
+            id: `${boxId}-divider-${i}`,
+            moduleId: "__carcass__",
+            columnId: column.id,
+            role: "shelf",
+            orientation: "horizontal-xz",
+            widthM: innerWidth,
+            heightM: depthM,
+            thicknessMm,
+            isHardware: false,
+            centerX: columnX0 + W / 2,
+            centerY: yTop - thicknessM / 2,
+            centerZ: depthM / 2,
+            sizeX: innerWidth,
+            sizeY: thicknessM,
+            sizeZ: depthM,
+          });
+        }
+
+        yBottom = yTop;
+      }
+    });
 
     pieces.push(...genFullDoorPieces(column, columnX0, globalParams, H));
 

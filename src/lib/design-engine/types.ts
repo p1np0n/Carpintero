@@ -61,6 +61,14 @@ export interface Module {
   /** Number of horizontal shelf boards splitting this module's own compartment into
    * that many + 1 equal-height stacked sections (e.g. 1 divider = 2 sections). */
   horizontalDividers?: number;
+
+  /** When true, this module starts a brand-new independent physical box — its own sides,
+   * back panel, and top/bottom caps — instead of continuing the same carcass as the module
+   * below it. Use this to stack two (or more) separately-built cabinets in one column
+   * instead of one tall continuous carcass. Ignored on a column's first module, which
+   * always starts its first box. Uses more material at the seam (two boards meet instead
+   * of one shared divider) but each box can be built, finished and moved on its own. */
+  newBoxHere?: boolean;
 }
 
 /** A single door (or pair of doors) covering the column's full height, in front of

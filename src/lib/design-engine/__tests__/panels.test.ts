@@ -189,4 +189,47 @@ describe("computePanels", () => {
     expect(visible.some((p) => p.role === "hanging-rod" && p.orientation === "rod")).toBe(true);
     expect(visible.some((p) => p.role === "hanging-rod" && p.orientation === "hardware")).toBe(false);
   });
+
+  it("newBoxHere splits a column into two independent carcasses instead of one continuous one", () => {
+    const design = designWithModules([
+      { id: "m1", type: "shelf", heightM: 0.9 },
+      { id: "m2", type: "shelf", heightM: 0.9, newBoxHere: true },
+    ]);
+    const panels = computePanels(design);
+
+    const sides = panels.filter((p) => p.role === "side-panel");
+    const backs = panels.filter((p) => p.role === "back-panel");
+    // 2 boxes x (2 sides + 1 back) instead of 1 continuous box's 2 sides + 1 back.
+    expect(sides).toHaveLength(4);
+    expect(backs).toHaveLength(2);
+    expect(sides.every((s) => s.heightM < 1.0)).toBe(true); // each box only 0.9m tall, not 1.8m
+
+    // Each box gets its own top+bottom caps (2 x 2 = 4) plus each shelf module's own
+    // shelf board (2) = 6 "shelf" role pieces, and no shared mid-column divider board.
+    expect(panels.filter((p) => p.role === "shelf")).toHaveLength(6);
+  });
+
+  it("newBoxHere on the first module of a column is a no-op (nothing to split from)", () => {
+    const withFlag = designWithModules([{ id: "m1", type: "shelf", heightM: 0.9, newBoxHere: true }]);
+    const without = designWithModules([{ id: "m1", type: "shelf", heightM: 0.9 }]);
+
+    expect(computePanels(withFlag).filter((p) => p.role === "side-panel")).toHaveLength(
+      computePanels(without).filter((p) => p.role === "side-panel").length
+    );
+  });
+
+  it("each independent box sits at its own height, stacked without gaps or overlaps", () => {
+    const design = designWithModules([
+      { id: "m1", type: "open", heightM: 0.4 },
+      { id: "m2", type: "open", heightM: 0.6, newBoxHere: true },
+    ]);
+    const panels = computePanels(design);
+    const sides = panels.filter((p) => p.role === "side-panel").sort((a, b) => a.centerY - b.centerY);
+    const [lowerBoxSide, upperBoxSide] = [sides[0], sides[2]];
+
+    expect(lowerBoxSide.heightM).toBeCloseTo(0.4, 5);
+    expect(lowerBoxSide.centerY - lowerBoxSide.heightM / 2).toBeCloseTo(0, 5);
+    expect(upperBoxSide.heightM).toBeCloseTo(0.6, 5);
+    expect(upperBoxSide.centerY - upperBoxSide.heightM / 2).toBeCloseTo(0.4, 5); // starts right on top
+  });
 });
